@@ -1,11 +1,20 @@
 {
   "expo": {
+<<<<<<< HEAD
     "name": "projeto",
     "slug": "projeto",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "projeto",
+=======
+    "name": "tela-login-nutri",
+    "slug": "tela-login-nutri",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "telaloginnutri",
+>>>>>>> 2dae044a7f6b6ad41f5a7b613463b37e89828473
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

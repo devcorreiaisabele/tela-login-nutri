@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "name": "projeto",
+=======
+  "name": "tela-login-nutri",
+>>>>>>> 2dae044a7f6b6ad41f5a7b613463b37e89828473
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
