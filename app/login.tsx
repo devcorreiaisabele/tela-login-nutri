@@ -1,41 +1,43 @@
 import React from 'react';
-import { KeyboardAvoidingView, View, Image, TextInput, StyleSheet } from 'react-native';
+import { View, TextInput, Image, StyleSheet } from 'react-native';
 
 export default function App() {
   return (
-    <KeyboardAvoidingView style={styles.login}>
-      <View>
-        <Image 
-          source={require('../assets/images/icon.png')}
-          style={{ width: 100, height: 100 }} 
-        />
-      </View>
+    <View style={styles.container}>
+      
+      <Image
+        source={require('../src/assets/images/icon.png')}
+        style={styles.logo}
+      />
 
-      <View style={styles.inputContainer}>
-        <TextInput 
-          placeholder='email'
-          autoCorrect={false}
-          style={styles.input}
-        />
-      </View>
-    </KeyboardAvoidingView>
+      <TextInput
+        style={styles.input}
+        placeholder="Digite seu email"
+      />
+
+    </View>
   );
 }
 
-const styles = StyleSheet.create({ 
-  login: {
+const styles = StyleSheet.create({
+  container: {
     flex: 1,
+    backgroundColor: '#282828',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFF', 
   },
-  inputContainer: {
-    width: '80%',
-    marginTop: 20,
+
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
   },
+
   input: {
-    borderBottomWidth: 1,
-    borderColor: '#000',
-    padding: 10,
-  }
+    width: '80%',
+    height: 50,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+  },
 });
