@@ -1,9 +1,14 @@
-import React from 'react';
-import { View, TextInput, Image, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { Image, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function App() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   return (
     <View style={styles.container}>
+      
+      <Text style={styles.title}>Acessar conta</Text>
       
       <Image
         source={require('../src/assets/images/icon.png')}
@@ -13,6 +18,18 @@ export default function App() {
       <TextInput
         style={styles.input}
         placeholder="Digite seu email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Digite sua senha"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry={true} 
       />
 
     </View>
@@ -22,22 +39,30 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#282828',
-    alignItems: 'center',
     justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#ffffff',
   },
-
   logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
+    width: 150, 
+    height: 150,
+    alignSelf: 'center', 
+    marginBottom: 20,    
   },
-
+  title: {
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 28,
+    marginBottom: 20,
+    color: '#121212',
+  },
   input: {
-    width: '80%',
+    marginVertical: 8,
     height: 50,
-    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
     borderRadius: 8,
-    paddingHorizontal: 10,
+    padding: 15,
+    backgroundColor: '#f9f9f9',
   },
 });
