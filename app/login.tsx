@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Image, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Botao } from '../components/Botao'; //
 
 export default function App() {
   const [email, setEmail] = useState("");
@@ -32,6 +33,10 @@ export default function App() {
         secureTextEntry={true} 
       />
 
+      <Botao     //
+        title="Entrar" 
+        onPress={() => alert("Tentativa de Login!")}
+      />
     </View>
   );
 }
