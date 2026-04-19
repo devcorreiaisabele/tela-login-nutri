@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Image, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -6,6 +7,45 @@ import { Botao } from '../components/Botao';
 export default function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const entrar = async () => {
+    if (!email || !password) {
+      alert("Preencha todos os campos!");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await axios.get(
+        `https://69e4d882cfa9394db8da703c.mockapi.io/usuarios?email=${email}`
+      );
+
+      const usuarios = response.data;
+
+      if (usuarios.length === 0) {
+        alert("Usuário não encontrado!");
+        return;
+      }
+
+      const usuario = usuarios[0];
+
+      if (usuario.senha !== password) {
+        alert("Senha incorreta!");
+        return;
+      }
+
+      alert(`Bem-vindo, ${usuario.nome}!`);
+      router.push('./(tabs)');
+
+    } catch (error) {
+      console.log("Erro:", error);
+      alert("Erro ao fazer login.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -34,19 +74,19 @@ export default function App() {
         secureTextEntry={true} 
       />
 
-      <Botao     //
-        title="Entrar" 
-        onPress={() => alert("Tentativa de Login!")}
+      <Botao
+        title={loading ? "Carregando..." : "Entrar"}
+        onPress={entrar}
       />
 
       <Text 
-  onPress={() => router.push('./Cadastro')}
-  style={styles.cadastroText}> Não tem conta? Cadastre-se</Text> 
+        onPress={() => router.push('./Cadastro')}
+        style={styles.cadastroText}>
+        Não tem conta? Cadastre-se
+      </Text> 
 
     </View>
   );
-
-
 }
 
 const styles = StyleSheet.create({
@@ -70,11 +110,11 @@ const styles = StyleSheet.create({
     color: '#121212',
   },
   cadastroText: {
-  color: '#121212',
-  marginTop: 15,
-  textAlign: 'center',
-  fontSize: 14,
-},
+    color: '#121212',
+    marginTop: 15,
+    textAlign: 'center',
+    fontSize: 14,
+  },
   input: {
     marginVertical: 8,
     height: 50,
@@ -84,4 +124,4 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: '#f9f9f9',
   },
-});
+})
