@@ -41,10 +41,7 @@ export default function App() {
 
       <Text 
   onPress={() => router.push('./Cadastro')}
-  style={styles.cadastroText}
->
-  Não tem conta? Cadastre-se
-</Text> 
+  style={styles.cadastroText}> Não tem conta? Cadastre-se</Text> 
 
     </View>
   );

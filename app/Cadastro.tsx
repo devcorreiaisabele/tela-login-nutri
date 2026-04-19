@@ -79,32 +79,43 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 20,
-        backgroundColor: '#40312A',
+        backgroundColor: '#ffffff',
         justifyContent: 'center',
     },
     titulo: {
-        fontSize: 24,
+        fontSize: 28,
         fontWeight: 'bold',
-        color: '#FFF',
+        color: '#121212',
         marginBottom: 30,
         textAlign: 'center',
     },
     input: {
+        marginVertical: 8,
         height: 50,
         borderWidth: 1,
-        borderColor: '#121212',
+        borderColor: '#ddd',
         borderRadius: 8,
-        paddingHorizontal: 15,
-        marginBottom: 15,
-        fontSize: 16,
-        backgroundColor: '#FFF',
+        padding: 15,
+        backgroundColor: '#f9f9f9',
     },
-    buttonContainer: {
+    botao: {
+        backgroundColor: '#2196F3',
+        borderRadius: 8,
+        paddingVertical: 15,
+        alignItems: 'center',
         marginTop: 10,
     },
+    botaoText: {
+        color: '#FFF',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    buttonContainer: {
+    marginTop: 10,
+},
     loadingText: {
         textAlign: 'center',
-        color: '#FFF',
+        color: '#121212',
         fontSize: 16,
     }
 });
