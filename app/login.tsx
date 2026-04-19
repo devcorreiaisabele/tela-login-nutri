@@ -1,6 +1,7 @@
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Image, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Botao } from '../components/Botao'; //
+import { Botao } from '../components/Botao';
 
 export default function App() {
   const [email, setEmail] = useState("");
@@ -37,8 +38,18 @@ export default function App() {
         title="Entrar" 
         onPress={() => alert("Tentativa de Login!")}
       />
+
+      <Text 
+  onPress={() => router.push('./Cadastro')}
+  style={styles.cadastroText}
+>
+  Não tem conta? Cadastre-se
+</Text> 
+
     </View>
   );
+
+
 }
 
 const styles = StyleSheet.create({
@@ -61,6 +72,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     color: '#121212',
   },
+  cadastroText: {
+  color: '#121212',
+  marginTop: 15,
+  textAlign: 'center',
+  fontSize: 14,
+},
   input: {
     marginVertical: 8,
     height: 50,
