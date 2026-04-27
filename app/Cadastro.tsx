@@ -30,39 +30,42 @@ export default function Cadastro() {
     async function salvar() {
         if (!nome || !email || !senha) {
             Alert.alert('Atenção', 'Preencha todos os campos!');
-            return;
-        }
+            return;}
 
         setLoading(true);
 
-        try {
-            const { data: usuariosExistentes } = await axios.get(
-                `https://69e4d882cfa9394db8da703c.mockapi.io/usuarios?email=${email}`
-            );
+    try {
+    const { data: todosUsuarios } = await axios.get(
+        'https://69e4d882cfa9394db8da703c.mockapi.io/usuarios'
+    );
 
-            if (usuariosExistentes.length > 0) {
-                Alert.alert('Atenção', 'Este e-mail já está cadastrado!');
-                return;
-            }
+    const emailJaCadastrado = todosUsuarios.some(
+        (u: any) => u.email.toLowerCase() === email.trim().toLowerCase()
+    );
 
-            const response = await axios.post(
-                'https://69e4d882cfa9394db8da703c.mockapi.io/usuarios',
-                { nome, email, senha }
-            );
-
-            console.log('Sucesso:', response.data);
-            Alert.alert('Sucesso!', 'Conta criada com sucesso!');
-            setNome('');
-            setEmail('');
-            setSenha('');
-            router.back();
-        } catch (error) {
-            console.log('Erro:', error);
-            Alert.alert('Erro', 'Não foi possível criar a conta. Tente novamente.');
-        } finally {
-            setLoading(false);
-        }
+    if (emailJaCadastrado) {
+        Alert.alert('Atenção', 'Este e-mail já está cadastrado!');
+        return;
     }
+
+    const response = await axios.post(
+        'https://69e4d882cfa9394db8da703c.mockapi.io/usuarios',
+        { nome, email, senha }
+    );
+
+    console.log('Sucesso:', response.data);
+    Alert.alert('Sucesso!', 'Conta criada com sucesso!');
+    setNome('');
+    setEmail('');
+    setSenha('');
+    router.push('./Preferenciasdieta');
+} catch (error) {
+    console.log('Erro:', error);
+    Alert.alert('Erro', 'Não foi possível criar a conta. Tente novamente.');
+} finally {
+    setLoading(false);
+         }                  
+    }  
 
     return (
         <ImageBackground

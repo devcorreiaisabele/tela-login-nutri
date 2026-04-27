@@ -5,6 +5,7 @@ export default function LoginScreen() {
     <Stack>
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="Cadastro" options={{ headerShown: false }} />
+      <Stack.Screen name="Preferenciasdieta" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
     </Stack>
   );
