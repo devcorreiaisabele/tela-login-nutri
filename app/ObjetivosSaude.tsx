@@ -41,10 +41,10 @@ export default function ObjetivosSaude() {
       if (usuarioId) await updateUsuario(usuarioId, {
         objetivoSaude: objetivoSelecionado,
         rotinaAtividade: rotinaSelecionada,
-        pesoAtual: Number(pesoAtual),
-        pesoInicial: Number(pesoAtual),
-        pesoMeta: Number(meta),
-        altura: Number(altura),
+        pesoAtual: pesoAtual ? Number(pesoAtual) : null,
+        pesoInicial: pesoAtual ? Number(pesoAtual) : null,
+        pesoMeta: meta ? Number(meta) : null,
+        altura: altura ? Number(altura) / 100 : null,
       });
     } catch (e) {
       console.log('Erro ao salvar objetivos:', e);
