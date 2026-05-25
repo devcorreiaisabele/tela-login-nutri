@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { BotaoContinuar } from '../components/BotaoContinuar';
@@ -27,6 +27,7 @@ export default function PreferenciasDieta() {
   const [dietaSelecionada, setDietaSelecionada] = useState('');
   const [preferencias, setPreferencias]         = useState<string[]>([]);
   const [loading, setLoading]                   = useState(false);
+  const { origem } = useLocalSearchParams();
 
   function togglePreferencia(id: string) {
     setPreferencias(prev =>
@@ -53,7 +54,11 @@ export default function PreferenciasDieta() {
     } finally {
       setLoading(false);
     }
-    router.push('./Restricoesadicionais');
+    if (origem === 'edicao') {
+  router.replace('/Restricoesadicionais?origem=edicao');
+} else {
+  router.push('./Restricoesadicionais');
+}
   }
 
   return (
@@ -117,7 +122,7 @@ export default function PreferenciasDieta() {
 
       {loading
         ? <ActivityIndicator size="large" color="#2E7D32" style={{ margin: 20 }} />
-        : <BotaoContinuar onPress={handleContinuar} />
+        : <BotaoContinuar onPress={handleContinuar} texto={origem === 'edicao' ? 'Salvar' : 'Continuar'} />
       }
     </View>
   );

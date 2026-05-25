@@ -39,6 +39,7 @@ export default function LoginScreen() {
       <Stack.Screen name="TipoDeConta" options={{ headerShown: false }} />
       <Stack.Screen name="Todasconquistas" options={{ headerShown: false }} />
       <Stack.Screen name="Vincularnutricionista" options={{ headerShown: false }} />
+      <Stack.Screen name="Splashscreen" options={{ headerShown: false }} />
     </Stack>
   );
 }

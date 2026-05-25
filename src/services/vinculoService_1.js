@@ -24,3 +24,9 @@ export const deleteVinculo = async (id) => {
   const response = await api.delete(`/vinculo/${id}`);
   return response.data;
 };
+
+export const getVinculoAtivoByUsuario = async (usuarioId) => {
+  const response = await api.get(`/vinculo/usuario/${usuarioId}`);
+  const vinculos = response.data;
+  return vinculos.find((v) => v.status === 'Ativo') ?? null;
+};

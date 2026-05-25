@@ -24,3 +24,8 @@ export const deleteSolicitacao = async (id) => {
   const response = await api.delete(`/solicitacao/${id}`);
   return response.data;
 };
+
+export const getSolicitacoesPorNutricionista = async (idNutri) => {
+  const response = await api.get(`/solicitacao/nutricionista/${idNutri}`);
+  return response.data;
+};

@@ -63,51 +63,48 @@ export default function VincularNutricionista() {
         setNutriSelecionada(null);
     }
 
-    async function confirmarVinculo() {
+ async function confirmarVinculo() {
         if (!nutriSelecionada) return;
         setEnviando(true);
-
+ 
         try {
             const usuarioId = await AsyncStorage.getItem('usuarioId');
-
+ 
             if (!usuarioId) {
                 Alert.alert('Erro', 'Usuário não identificado. Faça login novamente.');
                 return;
             }
-
-            const hoje = new Date().toISOString().split('T')[0]; 
-
-            const solicitacao = await createSolicitacao({
-                fkIdUser: parseInt(usuarioId),
-                fkIdNutri: nutriSelecionada.idNutri,
+ 
+            const hoje = new Date().toISOString().split('T')[0];
+ 
+            await createSolicitacao({
+                usuarioId: parseInt(usuarioId),
+                nutricionistaId: nutriSelecionada.idNutri,
                 dataSolicitacao: hoje,
                 status: 'Pendente',
             });
-
+ 
             await createVinculo({
-                fkIdUser: parseInt(usuarioId),
-                fkIdNutri: nutriSelecionada.idNutri,
-                fkIdSolicitacao: solicitacao.idSolicitacao ?? solicitacao.id,
+                usuarioId: parseInt(usuarioId),
+                nutricionistaId: nutriSelecionada.idNutri,
                 dataSolicitacao: hoje,
                 status: 'Pendente',
             });
 
-            await AsyncStorage.setItem('nutricionistaVinculada', JSON.stringify({
-                idNutri:                nutriSelecionada.idNutri,
-                nomeCompleto:           nutriSelecionada.nomeCompleto,
-                especialidadePrincipal: nutriSelecionada.especialidadePrincipal,
-            }));
+            
 
             setSolicitados(prev => [...prev, nutriSelecionada.idNutri]);
             fecharModal();
-
+ 
             Alert.alert(
                 'Solicitação Enviada!',
                 `Sua solicitação de vínculo com ${nutriSelecionada.nomeCompleto} foi enviada com sucesso. Aguarde a confirmação.`,
                 [{ text: 'OK', onPress: () => router.back() }],
             );
-        } catch (error) {
-            console.log('Erro ao vincular:', error);
+        } catch (error: any) {
+            console.log('Erro status:', error?.response?.status);
+            console.log('Erro data:', JSON.stringify(error?.response?.data));
+            console.log('Erro message:', error?.message);
             Alert.alert('Erro', 'Não foi possível enviar a solicitação. Tente novamente.');
         } finally {
             setEnviando(false);

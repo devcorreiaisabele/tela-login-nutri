@@ -12,7 +12,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { getSolicitacoes, updateSolicitacao } from '../src/services/solicitacaoService_2';
+import { getSolicitacoesPorNutricionista, updateSolicitacao } from '../src/services/solicitacaoService_2';
 import { createVinculo } from '../src/services/vinculoService_1';
 
 
@@ -51,20 +51,16 @@ export default function NotificacoesNutricionista() {
         const buscar = async () => {
             try {
                 const nutricionistaId = await AsyncStorage.getItem('nutricionistaId');
-                const solicitacoes = await getSolicitacoes();
+                const solicitacoes = await getSolicitacoesPorNutricionista(nutricionistaId);
                 const minhas = solicitacoes
-                    .filter((s: any) =>
-                        s.nutricionista?.idNutri?.toString() === nutricionistaId ||
-                        s.fkIdNutri?.toString() === nutricionistaId
-                    )
                     .filter((s: any) => (s.status ?? 'Pendente') === 'Pendente')
                     .map((s: any) => ({
                         id: (s.idSolicitacao ?? s.id).toString(),
                         solicitacaoId: (s.idSolicitacao ?? s.id).toString(),
-                        usuarioId: (s.usuario?.idUser ?? s.fkIdUser)?.toString(),
+                        usuarioId: (s.usuarioId ?? s.usuario?.idUser ?? s.fkIdUser)?.toString(),
                         tipo: 'vinculo' as TipoNotificacao,
                         pacienteNome: s.usuario?.nomeCompleto ?? 'Paciente',
-                        mensagem: 'solicitou vÃ­nculo profissional.',
+                        mensagem: 'solicitou vi­nculo profissional.',
                         tempo: s.dataSolicitacao ?? 'Hoje',
                         lida: false,
                     }));
@@ -79,19 +75,22 @@ export default function NotificacoesNutricionista() {
     }, []);
 
     async function aceitar(notif: Notificacao) {
+        console.warn('ACEITANDO:', notif.id);
+        console.warn('RESPONDIDOS:', respondidos);
+        console.warn('USUARIO ID:', notif.usuarioId);
         try {
             if (notif.solicitacaoId) {
                 await updateSolicitacao(notif.solicitacaoId, { status: 'Aceita' });
             }
             const nutricionistaId = await AsyncStorage.getItem('nutricionistaId');
+            console.warn('NUTRI ID:', nutricionistaId);
             if (notif.usuarioId && nutricionistaId) {
                 await createVinculo({
-                    fkIdUser: Number(notif.usuarioId),
-                    fkIdNutri: Number(nutricionistaId),
-                    fkIdSolicitacao: notif.solicitacaoId ? Number(notif.solicitacaoId) : undefined,
-                    dataAprovacao: new Date().toISOString().split('T')[0],
-                    status: 'Ativo',
-                });
+                usuarioId: Number(notif.usuarioId),
+                nutricionistaId: Number(nutricionistaId),
+                dataSolicitacao: new Date().toISOString().split('T')[0],
+                status: 'Ativo',
+            });
             }
             setRespondidos(prev => [...prev, notif.id]);
             Alert.alert('✅ Vínculo aceito!', `${notif.pacienteNome} agora é seu paciente.`);
@@ -244,3 +243,4 @@ const styles = StyleSheet.create({
     btnVerDietaTexto:   { fontSize: 14, fontWeight: '700', color: '#111' },
     divisor:            { height: 1, backgroundColor: '#F0F0F0', marginHorizontal: 0 },
 });
+

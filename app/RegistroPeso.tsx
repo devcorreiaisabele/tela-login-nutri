@@ -95,6 +95,13 @@ export default function RegistroPeso() {
                 metaProgresso: metaPeso,
             });
 
+            const novoItem = {
+            idEvolucao: Date.now(),
+            dataRegistro: new Date().toISOString(),
+            pesoRegistrado: pesoSelecionado,
+            };
+            setHistorico(prev => [novoItem, ...prev]);
+
             Alert.alert('✅ Peso registrado!', `Seu peso de ${pesoSelecionado} kg foi salvo.`, [
                 {
                     text: 'OK',

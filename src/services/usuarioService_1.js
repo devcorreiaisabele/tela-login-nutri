@@ -60,4 +60,4 @@ export const deleteUsuario = async (id) => {
 export const getUsuarioLogado = async () => {
   const id = await AsyncStorage.getItem('usuarioId');
   return await getUsuarioById(id);
-};
+}; 

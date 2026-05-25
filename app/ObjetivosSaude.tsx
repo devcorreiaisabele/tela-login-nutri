@@ -5,6 +5,7 @@ import { ActivityIndicator, KeyboardAvoidingView, ScrollView, Text, TextInput, T
 import { globalStyles as style } from '../props/globalStyles';
 import { updateUsuario } from '../src/services/usuarioService_1';
 
+
 const OBJETIVOS = [
   { id: 'perder', emoji: '↘', titulo: 'Perder Peso',  descricao: 'Reduzir medidas e queimar gordura' },
   { id: 'manter', emoji: '⚖', titulo: 'Manter Peso',  descricao: 'Focar em alimentação saudável e energia' },

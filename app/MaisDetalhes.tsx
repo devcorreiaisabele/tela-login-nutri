@@ -98,7 +98,7 @@ useEffect(() => {
                             <MaterialCommunityIcons name="clipboard-list-outline" size={22} color="#fff" />
                             <Text style={styles.cardTitulo}>Resumo Nutricional</Text>
                         </View>
-                        <TouchableOpacity style={styles.editarBtn}>
+                        <TouchableOpacity style={styles.editarBtn} onPress={() => router.replace('./Preferenciasdieta?origem=edicao')}>
                             <Text style={styles.editarBtnTexto}>Editar</Text>
                         </TouchableOpacity>
                     </View>

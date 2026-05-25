@@ -1,11 +1,11 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { BotaoContinuar } from '../components/BotaoContinuar';
-import { updateUsuario } from '../src/services/usuarioService_1';
 import { globalStyles as g } from '../props/globalStyles';
+import { updateUsuario } from '../src/services/usuarioService_1';
 
 const RESTRICOES = [
   { id: 'nenhuma',   icone: 'food-fork-drink',     titulo: 'Nenhuma',          descricao: 'Sem restrições religiosas base' },
@@ -28,6 +28,8 @@ export default function RestricoesAdicionais() {
   const [restricao, setRestricao] = useState('nenhuma');
   const [alergias, setAlergias] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const { origem } = useLocalSearchParams();
+
 
   function toggleAlergia(id: string) {
     setAlergias((prev) =>
@@ -45,10 +47,11 @@ export default function RestricoesAdicionais() {
         alergias: alergias.join(','),
       });
     }
-    router.push('./ObjetivosSaude'); 
-  } catch (e) {
-    console.log('Erro ao salvar restrições:', e);
-    router.push('./ObjetivosSaude');
+if (origem === 'edicao') {
+  router.replace('/MaisDetalhes');
+} else {
+  router.push('./ObjetivosSaude');
+}
   } finally {
     setLoading(false);
   }
@@ -115,7 +118,7 @@ export default function RestricoesAdicionais() {
 
       {loading
         ? <ActivityIndicator size="large" color="#2E7D32" style={{ margin: 20 }} />
-        : <BotaoContinuar onPress={handleContinuar} />
+        : <BotaoContinuar onPress={handleContinuar} texto={origem === 'edicao' ? 'Salvar' : 'Continuar'} />
       }
     </View>
   );

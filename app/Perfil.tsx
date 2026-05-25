@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { globalStyles as style } from '../props/globalStyles';
 import { deleteUsuario, getUsuarioById } from '../src/services/usuarioService_1';
+import { getVinculoAtivoByUsuario } from '../src/services/vinculoService_1';
 
 interface NutricionistaVinculada {
     id: string;
@@ -37,8 +38,17 @@ export default function Perfil() {
             setUsuario(usuarioApi);
             setPerfil(usuarioApi);
 
-            const nutriJson = await AsyncStorage.getItem('nutricionistaVinculada');
-            setNutricionista(nutriJson ? JSON.parse(nutriJson) : null);
+            const vinculoAtivo = await getVinculoAtivoByUsuario(usuarioId);
+if (vinculoAtivo) {
+    setNutricionista({
+        id: vinculoAtivo.nutricionista?.idNutri?.toString(),
+        nome: vinculoAtivo.nutricionista?.nomeCompleto,
+        especialidade: vinculoAtivo.nutricionista?.especialidadePrincipal,
+        foto: null,
+    });
+} else {
+    setNutricionista(null);
+}
         } catch (e) {
             console.log('Erro ao carregar:', e);
         } finally {
