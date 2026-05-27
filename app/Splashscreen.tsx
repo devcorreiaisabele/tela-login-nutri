@@ -2,13 +2,13 @@ import { Audio } from 'expo-av';
 import { router } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import {
-    Animated,
-    Dimensions,
-    Easing,
-    Image,
-    StatusBar,
-    StyleSheet,
-    Text,
+  Animated,
+  Dimensions,
+  Easing,
+  Image,
+  StatusBar,
+  StyleSheet,
+  Text,
 } from 'react-native';
  
 const { width } = Dimensions.get('window');
@@ -38,7 +38,7 @@ export default function SplashScreen() {
     }
  
     function startAnimations() {
-      // Logo cai do topo
+
       Animated.parallel([
         Animated.timing(logoOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
         Animated.timing(logoY, {
@@ -49,7 +49,7 @@ export default function SplashScreen() {
         }),
       ]).start(() => {
  
-        // Pulo 1 — sobe e desce (maior)
+
         Animated.sequence([
           Animated.timing(logoY, {
             toValue: -60,
@@ -64,7 +64,7 @@ export default function SplashScreen() {
             useNativeDriver: true,
           }),
  
-          // Pulo 2 — sobe e desce (menor)
+
           Animated.timing(logoY, {
             toValue: -28,
             duration: 200,
@@ -78,13 +78,13 @@ export default function SplashScreen() {
             useNativeDriver: true,
           }),
         ]).start(() => {
-          // Texto aparece após os pulos
+
           Animated.parallel([
             Animated.timing(textOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
             Animated.spring(textY, { toValue: 0, tension: 60, friction: 8, useNativeDriver: true }),
           ]).start();
  
-          // Vai pro login após ficar estático
+
           setTimeout(() => {
             Animated.timing(screenOpacity, {
               toValue: 0,
