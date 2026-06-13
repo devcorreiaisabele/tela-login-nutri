@@ -13,8 +13,18 @@ import {
     View,
 } from 'react-native';
 import { updateUsuario } from '../src/services/usuarioService_1';
- 
-const OPCOES = [
+
+type OpcaoLib = 'ionicons' | 'material';
+
+interface Opcao {
+    id: string;
+    titulo: string;
+    desc: string;
+    icone: string;
+    lib: OpcaoLib;
+}
+
+const OPCOES: Opcao[] = [
     {
         id: 'perder',
         titulo: 'Perder Peso',
@@ -37,27 +47,31 @@ const OPCOES = [
         lib: 'ionicons',
     },
 ];
- 
+
 export default function AlterarMeta() {
-    const params = useLocalSearchParams();
-    const peso_atual = parseFloat(params.peso_atual) || 0;
- 
-    const [selecionado, setSelecionado] = useState(null);
-    const [salvando, setSalvando]       = useState(false);
- 
-    const handleSalvar = async () => {
+    const params = useLocalSearchParams<{ peso_atual?: string }>();
+    const peso_atual = parseFloat(params.peso_atual ?? '0') || 0;
+
+    const [selecionado, setSelecionado] = useState<string | null>(null);
+    const [salvando, setSalvando]       = useState<boolean>(false);
+    const [pesoMeta, setPesoMeta]       = useState<number>(peso_atual || 68);
+
+    const handleSalvar = async (): Promise<void> => {
         if (!selecionado) {
             Alert.alert('Atenção', 'Selecione uma meta antes de continuar.');
             return;
         }
- 
+
         setSalvando(true);
         try {
             const usuarioId = await AsyncStorage.getItem('usuarioId');
             if (usuarioId) {
-                await updateUsuario(usuarioId, { objetivoSaude: selecionado });
+                await updateUsuario(usuarioId, { 
+                objetivoSaude: selecionado, 
+                pesoMeta: Number(pesoMeta), 
+                });
             }
- 
+
             Alert.alert('Meta atualizada!', 'Seu plano alimentar será atualizado.', [
                 {
                     text: 'OK',
@@ -72,11 +86,11 @@ export default function AlterarMeta() {
             setSalvando(false);
         }
     };
- 
+
     return (
         <View style={styles.root}>
             <StatusBar barStyle="dark-content" backgroundColor="#f0f2ee" />
- 
+
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.btnVoltar}>
                     <Ionicons name="chevron-back" size={22} color="#1a1a1a" />
@@ -84,14 +98,14 @@ export default function AlterarMeta() {
                 <Text style={styles.headerTitulo}>Mudar Meta</Text>
                 <View style={{ width: 38 }} />
             </View>
- 
+
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
                 <Text style={styles.titulo}>Qual é a sua{'\n'}nova meta?</Text>
                 <Text style={styles.subtitulo}>
                     Escolha o seu próximo objetivo para{'\n'}atualizarmos o seu plano alimentar.
                 </Text>
- 
+
                 <View style={styles.opcoes}>
                     {OPCOES.map((op) => {
                         const ativo = selecionado === op.id;
@@ -105,19 +119,19 @@ export default function AlterarMeta() {
                                 <View style={[styles.iconeWrapper, ativo && styles.iconeWrapperAtivo]}>
                                     {op.lib === 'material' ? (
                                         <MaterialCommunityIcons
-                                            name={op.icone}
+                                            name={op.icone as any}
                                             size={26}
                                             color={ativo ? '#fff' : '#2E7D32'}
                                         />
                                     ) : (
                                         <Ionicons
-                                            name={op.icone}
+                                            name={op.icone as any}
                                             size={26}
                                             color={ativo ? '#fff' : '#2E7D32'}
                                         />
                                     )}
                                 </View>
- 
+
                                 <View style={styles.cardOpcaoTexto}>
                                     <Text style={styles.cardOpcaoTitulo}>{op.titulo}</Text>
                                     <Text style={styles.cardOpcaoDesc}>{op.desc}</Text>
@@ -130,9 +144,33 @@ export default function AlterarMeta() {
                         );
                     })}
                 </View>
- 
-            </ScrollView>
- 
+
+                <View style={styles.pesoCard}>
+                    <Text style={styles.pesoLabel}>QUAL PESO VOCÊ QUER ATINGIR?</Text>
+                    <View style={styles.pesoControle}>
+                        <TouchableOpacity
+                            style={styles.pesoBotao}
+                            onPress={() => setPesoMeta(p => Math.max(30, p - 1))}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="remove" size={22} color="#2E7D32" />
+                        </TouchableOpacity>
+                        <View style={styles.pesoValorWrapper}>
+                            <Text style={styles.pesoValor}>{pesoMeta}</Text>
+                            <Text style={styles.pesoUnidade}>kg</Text>
+                        </View>
+                        <TouchableOpacity
+                            style={styles.pesoBotao}
+                            onPress={() => setPesoMeta(p => Math.min(300, p + 1))}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="add" size={22} color="#2E7D32" />
+                        </TouchableOpacity>
+                    </View>
+                    <Text style={styles.pesoHint}>Use os botões para ajustar o seu peso alvo</Text>
+                </View>
+                </ScrollView>
+
             <View style={styles.rodape}>
                 <TouchableOpacity
                     style={[styles.btnSalvar, salvando && { opacity: 0.6 }]}
@@ -149,7 +187,7 @@ export default function AlterarMeta() {
         </View>
     );
 }
- 
+
 const styles = StyleSheet.create({
     root:               { flex: 1, backgroundColor: '#f0f2ee' },
     header:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 54, paddingBottom: 12, backgroundColor: '#f0f2ee' },
@@ -171,4 +209,12 @@ const styles = StyleSheet.create({
     rodape:             { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, backgroundColor: '#f0f2ee' },
     btnSalvar:          { backgroundColor: '#2E7D32', borderRadius: 30, paddingVertical: 18, alignItems: 'center' },
     btnSalvarTexto:     { fontSize: 16, fontWeight: '700', color: '#fff' },
+    pesoCard:           { backgroundColor: '#fff', borderRadius: 20, padding: 24, alignItems: 'center', marginTop: 14, gap: 16 },
+    pesoLabel:          { fontSize: 12, fontWeight: '700', color: '#555', letterSpacing: 1 },
+    pesoControle:       { flexDirection: 'row', alignItems: 'center', gap: 32 },
+    pesoBotao:          { width: 52, height: 52, borderRadius: 26, borderWidth: 2, borderColor: '#2E7D32', justifyContent: 'center', alignItems: 'center' },
+    pesoValorWrapper:   { flexDirection: 'row', alignItems: 'flex-end', gap: 4 },
+    pesoValor:          { fontSize: 72, fontWeight: '900', color: '#1a1a1a', lineHeight: 80 },
+    pesoUnidade:        { fontSize: 22, fontWeight: '700', color: '#1a1a1a', marginBottom: 10 },
+    pesoHint:           { fontSize: 13, color: '#999' },
 });

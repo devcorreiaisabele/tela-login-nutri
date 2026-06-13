@@ -13,8 +13,7 @@ import {
     View,
 } from 'react-native';
 import { getSolicitacoesPorNutricionista, updateSolicitacao } from '../src/services/solicitacaoService_2';
-import { createVinculo } from '../src/services/vinculoService_1';
-
+import { ativarVinculoPendente } from '../src/services/vinculoService_1';
 
 type TipoNotificacao = 'vinculo' | 'dieta' | 'meta';
 
@@ -51,16 +50,20 @@ export default function NotificacoesNutricionista() {
         const buscar = async () => {
             try {
                 const nutricionistaId = await AsyncStorage.getItem('nutricionistaId');
-                const solicitacoes = await getSolicitacoesPorNutricionista(nutricionistaId);
-                const minhas = solicitacoes
-                    .filter((s: any) => (s.status ?? 'Pendente') === 'Pendente')
+const solicitacoes = await getSolicitacoesPorNutricionista(nutricionistaId);
+console.warn('SOLICITACAO 33:', JSON.stringify(solicitacoes.find((s: any) => (s.idSolicitacao ?? s.id) == 33)));
+const minhas = solicitacoes
+    .filter((s: any) => {
+    const st = s.status ?? 'Pendente';
+    return st === 'Pendente';
+})
                     .map((s: any) => ({
                         id: (s.idSolicitacao ?? s.id).toString(),
                         solicitacaoId: (s.idSolicitacao ?? s.id).toString(),
-                        usuarioId: (s.usuarioId ?? s.usuario?.idUser ?? s.fkIdUser)?.toString(),
+                        usuarioId: s.fkIdUser?.toString(),
                         tipo: 'vinculo' as TipoNotificacao,
                         pacienteNome: s.usuario?.nomeCompleto ?? 'Paciente',
-                        mensagem: 'solicitou vi­nculo profissional.',
+                        mensagem: 'solicitou vÃ­nculo profissional.',
                         tempo: s.dataSolicitacao ?? 'Hoje',
                         lida: false,
                     }));
@@ -85,12 +88,7 @@ export default function NotificacoesNutricionista() {
             const nutricionistaId = await AsyncStorage.getItem('nutricionistaId');
             console.warn('NUTRI ID:', nutricionistaId);
             if (notif.usuarioId && nutricionistaId) {
-                await createVinculo({
-                usuarioId: Number(notif.usuarioId),
-                nutricionistaId: Number(nutricionistaId),
-                dataSolicitacao: new Date().toISOString().split('T')[0],
-                status: 'Ativo',
-            });
+            await ativarVinculoPendente(notif.usuarioId, nutricionistaId);
             }
             setRespondidos(prev => [...prev, notif.id]);
             Alert.alert('✅ Vínculo aceito!', `${notif.pacienteNome} agora é seu paciente.`);
@@ -243,4 +241,3 @@ const styles = StyleSheet.create({
     btnVerDietaTexto:   { fontSize: 14, fontWeight: '700', color: '#111' },
     divisor:            { height: 1, backgroundColor: '#F0F0F0', marginHorizontal: 0 },
 });
-

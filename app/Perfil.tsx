@@ -34,6 +34,7 @@ export default function Perfil() {
             const usuarioId = await AsyncStorage.getItem('usuarioId');
             if (!usuarioId) return;
             const usuarioApi = await getUsuarioById(usuarioId);
+            console.log('USUARIO:', JSON.stringify(usuario, null, 2));
 
             setUsuario(usuarioApi);
             setPerfil(usuarioApi);
@@ -41,9 +42,9 @@ export default function Perfil() {
             const vinculoAtivo = await getVinculoAtivoByUsuario(usuarioId);
 if (vinculoAtivo) {
     setNutricionista({
-        id: vinculoAtivo.nutricionista?.idNutri?.toString(),
-        nome: vinculoAtivo.nutricionista?.nomeCompleto,
-        especialidade: vinculoAtivo.nutricionista?.especialidadePrincipal,
+        id: vinculoAtivo.fkIdNutri?.toString(),
+        nome: vinculoAtivo.nutricionistaNome,
+        especialidade: vinculoAtivo.nutricionistaEspecialidade,
         foto: null,
     });
 } else {
@@ -182,7 +183,7 @@ if (vinculoAtivo) {
                         style={styles.card}
                         activeOpacity={0.75}
                         onPress={() => router.push({
-                            pathname: './Desvincularnutricionista',
+                            pathname: './DesvincularNutricionista',
                             params: {
                                 nutriId:    nutricionista.id,
                                 nutriNome:  nutricionista.nome,

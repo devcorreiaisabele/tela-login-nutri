@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -10,6 +11,8 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { getEvolucoes } from '../src/services/evolucaoService_1';
+import { getVinculos } from '../src/services/vinculoService_1';
 
 const CORES = ['#2E7D32', '#1565C0', '#E65100', '#6D28D9', '#065F46', '#B71C1C'];
 
@@ -20,7 +23,8 @@ type Evolucao = {
     metaProgresso: number;
     totalCaloriasConsumidas: number;
     refeicoesConcluidasI: number;
-    usuario: { nomeCompleto: string };
+    usuario: { idUser?: number; nomeCompleto: string };
+    fkIdUser?: number;
 };
 
 function gerarConquista(ev: Evolucao): { titulo: string; descricao: string } {
@@ -53,48 +57,38 @@ export default function TodasConquistas() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-    const mockEvolucoes: Evolucao[] = [
-        {
-            idEvolucao: 1,
-            dataRegistro: '2025-05-01',
-            pesoRegistrado: 68,
-            metaProgresso: 68,
-            totalCaloriasConsumidas: 1800,
-            refeicoesConcluidasI: 3,
-            usuario: { nomeCompleto: 'Ana Paula Silva' },
-        },
-        {
-            idEvolucao: 2,
-            dataRegistro: '2025-05-05',
-            pesoRegistrado: 72,
-            metaProgresso: 70,
-            totalCaloriasConsumidas: 2100,
-            refeicoesConcluidasI: 2,
-            usuario: { nomeCompleto: 'Carlos Eduardo Lima' },
-        },
-        {
-            idEvolucao: 3,
-            dataRegistro: '2025-05-10',
-            pesoRegistrado: 65,
-            metaProgresso: 65,
-            totalCaloriasConsumidas: 1600,
-            refeicoesConcluidasI: 1,
-            usuario: { nomeCompleto: 'Mariana Souza' },
-        },
-        {
-            idEvolucao: 4,
-            dataRegistro: '2025-05-14',
-            pesoRegistrado: 80,
-            metaProgresso: 78,
-            totalCaloriasConsumidas: 2400,
-            refeicoesConcluidasI: 4,
-            usuario: { nomeCompleto: 'João Pedro Alves' },
-        },
-    ];
+        const carregar = async () => {
+            setLoading(true);
+            try {
+                const nutricionistaId = await AsyncStorage.getItem('nutricionistaId');
 
-    setEvolucoes(mockEvolucoes);
-    setLoading(false);
-}, []);
+                const [vinculos, todasEvolucoes] = await Promise.all([
+                    getVinculos(),
+                    getEvolucoes(),
+                ]);
+
+                const meusVinculos = vinculos.filter((v: any) =>
+                    v.nutricionista?.idNutri?.toString() === nutricionistaId ||
+                    v.fkIdNutri?.toString() === nutricionistaId
+                );
+                const ativos = meusVinculos.filter((v: any) => (v.status ?? '').toLowerCase() === 'ativo');
+                const idsAtivos = new Set(ativos.map((v: any) =>
+                    (v.usuario?.idUser ?? v.fkIdUser)?.toString()
+                ));
+
+                const evolucoesFiltradas = todasEvolucoes.filter((e: any) =>
+                    idsAtivos.has((e.usuario?.idUser ?? e.fkIdUser)?.toString())
+                );
+
+                setEvolucoes(evolucoesFiltradas);
+            } catch (err) {
+                console.error('Erro ao carregar conquistas:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        carregar();
+    }, []);
 
     if (loading) {
         return (

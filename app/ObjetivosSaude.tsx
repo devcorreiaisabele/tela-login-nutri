@@ -5,7 +5,6 @@ import { ActivityIndicator, KeyboardAvoidingView, ScrollView, Text, TextInput, T
 import { globalStyles as style } from '../props/globalStyles';
 import { updateUsuario } from '../src/services/usuarioService_1';
 
-
 const OBJETIVOS = [
   { id: 'perder', emoji: '↘', titulo: 'Perder Peso',  descricao: 'Reduzir medidas e queimar gordura' },
   { id: 'manter', emoji: '⚖', titulo: 'Manter Peso',  descricao: 'Focar em alimentação saudável e energia' },
@@ -24,7 +23,11 @@ export default function ObjetivosSaude() {
   const [pesoAtual, setPesoAtual]                     = useState('');
   const [meta, setMeta]                               = useState('');
   const [altura, setAltura]                           = useState('');
-  const [loading, setLoading]                         = useState(false); 
+  const [loading, setLoading]                         = useState(false);
+  const [genero, setGenero]                           = useState('');
+  const [diaNascimento, setDiaNascimento]             = useState('');
+  const [mesNascimento, setMesNascimento]             = useState('');
+  const [anoNascimento, setAnoNascimento]             = useState('');
 
 
   async function handleContinuar() {
@@ -36,6 +39,14 @@ export default function ObjetivosSaude() {
     altura,
 }));
     setLoading(true);
+
+    let dataNascimento: string | null = null;
+    if (diaNascimento && mesNascimento && anoNascimento) {
+      const dia = diaNascimento.padStart(2, '0');
+      const mes = mesNascimento.padStart(2, '0');
+      dataNascimento = `${anoNascimento}-${mes}-${dia}`;
+    }
+
     try {
       const usuarioId = await AsyncStorage.getItem('usuarioId');
       console.warn('ID DO USUARIO: ' + usuarioId);
@@ -46,6 +57,8 @@ export default function ObjetivosSaude() {
         pesoInicial: pesoAtual ? Number(pesoAtual) : null,
         pesoMeta: meta ? Number(meta) : null,
         altura: altura ? Number(altura) / 100 : null,
+        genero: genero || null,
+        dataNascimento,
       });
     } catch (e) {
       console.log('Erro ao salvar objetivos:', e);
@@ -126,6 +139,63 @@ export default function ObjetivosSaude() {
             </View>
           ))}
         </View>
+
+        <Text style={style.titulo2}>Data de Nascimento</Text>
+        <Text style={style.subtitulo}>Insira o dia, mês e ano em que você nasceu.</Text>
+        <View style={style.inputRow}>
+          {[
+            { label: 'Dia',  value: diaNascimento, onChange: setDiaNascimento, maxLength: 2, placeholder: 'DD' },
+            { label: 'Mês',  value: mesNascimento, onChange: setMesNascimento, maxLength: 2, placeholder: 'MM' },
+            { label: 'Ano',  value: anoNascimento, onChange: setAnoNascimento, maxLength: 4, placeholder: 'AAAA' },
+          ].map(({ label, value, onChange, maxLength, placeholder }) => (
+            <View style={style.inputWrapper} key={label}>
+              <Text style={style.inputLabel}>{label}</Text>
+              <View style={style.inputBox}>
+                <TextInput
+                  style={style.input}
+                  placeholder={placeholder}
+                  placeholderTextColor="#BDBDBD"
+                  keyboardType="numeric"
+                  maxLength={maxLength}
+                  value={value}
+                  onChangeText={onChange}
+                />
+              </View>
+            </View>
+          ))}
+        </View>
+
+       <Text style={style.titulo2}>Gênero</Text>
+       <Text style={style.subtitulo}>
+       Se você está em transição hormonal há mais de um ano, selecione o gênero correspondente
+       aos seus hormônios predominantes para um cálculo mais aproximado.
+       </Text>
+       <View style={{ flexDirection: 'row', gap: 10, marginBottom: 4 }}>
+       {[
+       { id: 'MASCULINO', label: 'Homem', emoji: '👤' },
+       { id: 'FEMININO',  label: 'Mulher', emoji: '👤' },
+       ].map((g) => {
+      const sel = genero === g.id;
+      return (
+      <TouchableOpacity
+        key={g.id}
+        onPress={() => setGenero(g.id)}
+        activeOpacity={0.8}
+        style={[style.card, sel && style.cardSelecionado, { flex: 1, justifyContent: 'center' }]}
+      >
+        <View style={[style.cardIcone, sel && style.cardIconeSelecionado]}>
+          <Text style={[style.emoji, sel && style.emojiSelecionado]}>{g.emoji}</Text>
+        </View>
+        <Text style={[style.cardTitulo, sel && style.cardTituloSelecionado]}>{g.label}</Text>
+        {sel && (
+          <View style={style.checkCircle}>
+            <Text style={style.checkMark}>✓</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  })}
+  </View>
 
         <Text style={style.titulo2}>Perfil e rotina</Text>
         <Text style={style.subtitulo}>Essas informações ajudam a ajustar calorias e proteína do dia.</Text>

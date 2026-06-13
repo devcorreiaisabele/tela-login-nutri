@@ -10,6 +10,16 @@ export const getPlanoById = async (id) => {
   return response.data;
 };
 
+export const getPlanosByUsuario = async (usuarioId) => {
+  const response = await api.get(`/plano/usuario/${usuarioId}`);
+  return response.data;
+};
+
+export const createPlanoReceita = async (dados) => {
+  const response = await api.post('/planoreceita', dados);
+  return response.data;
+};
+
 export const createPlano = async (dados) => {
   const response = await api.post('/plano', dados);
   return response.data;

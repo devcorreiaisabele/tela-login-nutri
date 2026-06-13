@@ -67,48 +67,55 @@ export default function CadastroNutricionista() {
         );
     }, [nome, email, senha, crn, especialidade, termos]);
 
-    async function finalizar() {
-        if (!botaoAtivo) return;
-        setLoading(true);
+    async function finalizar(): Promise<void> {
+    if (!botaoAtivo) return;
+    setLoading(true);
 
-        try {
-            const emailNormalizado = email.trim().toLowerCase();
-            const nutricionistas = await getNutricionistas();
-            const emailExiste = nutricionistas.some(
-                (n: any) => n.emailProfissional?.toLowerCase() === emailNormalizado
-            );
+    try {
+        const emailNormalizado = email.trim().toLowerCase();
+        const lista = await getNutricionistas();
+        const emailExiste = lista.some(
+            (n: any) => n.emailProfissional?.toLowerCase() === emailNormalizado
+        );
 
-            if (emailExiste) {
-                Alert.alert('Erro', 'Este e-mail profissional jÃ¡ estÃ¡ cadastrado.');
-                return;
-            }
-
-            const nutricionista = await createNutricionista({
-                nomeCompleto: nome.trim(),
-                emailProfissional: emailNormalizado,
-                senhaHash: senha,
-                crn: crn.trim(),
-                uf: ufSelecionada,
-                especialidadePrincipal: especialidade,
-            });
-
-            await AsyncStorage.setItem('nutricionistaId',   (nutricionista.idNutri ?? nutricionista.id).toString());
-            await AsyncStorage.setItem('nutricionistaNome', nutricionista.nomeCompleto);
-            await AsyncStorage.setItem('nutricionistaEmail', nutricionista.emailProfissional);
-            await AsyncStorage.setItem('nutricionistaPerfil', JSON.stringify(nutricionista));
-
-            Alert.alert(
-                '✅ Cadastro realizado!',
-                'Sua conta profissional foi criada com sucesso.',
-                [{ text: 'Entrar', onPress: () => router.push('./Dashboardnutricionista')}],
-            );
-        } catch (err) {
-            console.error('Erro no cadastro:', err);
-            Alert.alert('Erro', 'Não foi possível criar a conta. Tente novamente.');
-        } finally {
-            setLoading(false);
+        if (emailExiste) {
+            Alert.alert('Erro', 'Este e-mail profissional já está cadastrado.');
+            return;
         }
+
+        await createNutricionista({
+            nomeCompleto: nome.trim(),
+            emailProfissional: emailNormalizado,
+            senhaHash: senha,
+            crn: crn.trim(),
+            uf: ufSelecionada,
+            especialidadePrincipal: especialidade,
+        });
+
+        const listaAtualizada = await getNutricionistas();
+        const nutricionista = listaAtualizada.find(
+            (n: any) => n.emailProfissional?.toLowerCase() === emailNormalizado
+        );
+
+        if (!nutricionista) {
+            Alert.alert('Erro', 'Não foi possível recuperar os dados da conta.');
+            return;
+        }
+
+        await AsyncStorage.setItem('nutricionistaId', nutricionista.idNutri.toString());
+        await AsyncStorage.setItem('nutricionistaNome', nutricionista.nomeCompleto);
+        await AsyncStorage.setItem('nutricionistaEmail', nutricionista.emailProfissional);
+        await AsyncStorage.setItem('nutricionistaPerfil', JSON.stringify(nutricionista));
+
+        router.push('./Dashboardnutricionista');
+
+    } catch (err) {
+        console.error('Erro no cadastro:', err);
+        Alert.alert('Erro', 'Não foi possível criar a conta. Tente novamente.');
+    } finally {
+        setLoading(false);
     }
+}
 
     return (
         <ImageBackground
@@ -350,3 +357,4 @@ const local = StyleSheet.create({
     modalBtnFechar:      { marginTop: 16, backgroundColor: '#F0F0F0', borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
     modalBtnFecharTexto: { fontSize: 15, fontWeight: '700', color: '#333' },
 });
+

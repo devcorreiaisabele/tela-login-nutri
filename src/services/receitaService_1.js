@@ -12,6 +12,11 @@ export const getReceitaById = async (id) => {
   return response.data;
 };
 
+export const getReceitasByNutricionista = async (idNutri) => {
+  const response = await api.get(`/receita/nutricionista/${idNutri}`);
+  return response.data;
+};
+
 export const createReceita = async (dados) => {
 
   const response = await api.post('/receita', dados);

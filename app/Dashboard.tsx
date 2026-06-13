@@ -18,31 +18,110 @@ import {
 import Svg, { Circle } from 'react-native-svg';
 import { globalStyles as style } from '../props/globalStyles';
 import { getUsuarioById } from '../src/services/usuarioService_1';
- 
- 
-const REFEICOES_INICIAL = [
+
+
+type Refeicao = {
+    id: string;
+    tipo: string;
+    titulo: string | null;
+    desc: string | null;
+    imagem: string | null;
+};
+
+type Perfil = {
+    id: number | null;
+    peso_atual: number;
+    meta_peso: number;
+    peso_inicial: number;
+    objetivo: string;
+};
+
+type Nutri = {
+    proteina: number;
+    ferro: number;
+    vitB12: number;
+    kcalGasto: number;
+};
+
+type UsuarioApi = {
+    idUser?: number;
+    id?: number;
+    pesoAtual?: string | number;
+    peso_atual?: string | number;
+    pesoMeta?: string | number;
+    metaPeso?: string | number;
+    meta_peso?: string | number;
+    pesoInicial?: string | number;
+    peso_inicial?: string | number;
+        objetivoSaude?: string; 
+    altura?: string | number;
+    genero?: string;
+    dataNascimento?: string;
+    rotinaAtividade?: string;
+};
+
+const REFEICOES_INICIAL: Refeicao[] = [
     { id: '1', tipo: 'Café da Manhã', titulo: null, desc: null, imagem: null },
     { id: '2', tipo: 'Lanche',        titulo: null, desc: null, imagem: null },
     { id: '3', tipo: 'Almoço',        titulo: null, desc: null, imagem: null },
     { id: '4', tipo: 'Jantar',        titulo: null, desc: null, imagem: null },
 ];
- 
-function calcularProgresso(pesoAtual, metaPeso, pesoInicial) {
+
+function calcularProgresso(pesoAtual: number, metaPeso: number, pesoInicial: number): number {
     if (!pesoInicial || pesoInicial === metaPeso) return 0;
     const totalParaPerder = Math.abs(pesoInicial - metaPeso);
     const jaPercorrido    = Math.abs(pesoInicial - pesoAtual);
     return Math.min(Math.round((jaPercorrido / totalParaPerder) * 100), 100);
 }
 
-function CirculoGasto({ valor, meta = 600 }) {
+function calcularTMB(peso: number, altura: number, idade: number, genero: string) {
+    if (genero.toLowerCase().includes('femin')) {
+        return Math.round(10 * peso + 6.25 * altura - 5 * idade - 161);
+    }
+    return Math.round(10 * peso + 6.25 * altura - 5 * idade + 5);
+}
+
+function calcularIdade(dataNascimento: string): number {
+    const nasc = new Date(dataNascimento);
+    const hoje = new Date();
+    let idade = hoje.getFullYear() - nasc.getFullYear();
+    const m = hoje.getMonth() - nasc.getMonth();
+    if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+    return idade;
+}
+
+
+function fatorAtividade(rotina: string): number {
+    const r = rotina.toLowerCase();
+    if (r.includes('muito ativ') || r.includes('extrema')) return 1.9;
+    if (r.includes('ativ')) return 1.725;
+    if (r.includes('moderad')) return 1.55;
+    if (r.includes('leve')) return 1.375;
+    if (r.includes('sedentari') || r.includes('sedentár')) return 1.2;
+    return 1.375; 
+}
+
+function estimativaGasto(tmb: number, rotina: string): number {
+    const r = rotina.toLowerCase();
+    if (r.includes('atleta')) return Math.round(tmb * 0.7);
+    if (r.includes('ativ'))   return Math.round(tmb * 0.5);
+    return Math.round(tmb * 0.3); 
+}
+
+type CirculoGastoProps = {
+    valor: number;
+    meta?: number;
+};
+
+function CirculoGasto({ valor, meta = 600 }: CirculoGastoProps) {
     const tamanho        = 74;
     const raio           = 30;
     const cx             = tamanho / 2;
     const cy             = tamanho / 2;
     const circunferencia = 2 * Math.PI * raio;
- 
+
     const animado = useRef(new Animated.Value(0)).current;
- 
+
     useEffect(() => {
         Animated.timing(animado, {
             toValue: Math.min(valor / meta, 1),
@@ -52,15 +131,15 @@ function CirculoGasto({ valor, meta = 600 }) {
     }, [valor, meta]);
 
     const [pct, setPct] = useState(0);
- 
+
     useEffect(() => {
         const id = animado.addListener(({ value }) => setPct(value));
         return () => animado.removeListener(id);
     }, [animado]);
- 
+
     const dash = pct * circunferencia;
     const gap  = circunferencia - dash;
- 
+
     return (
         <View style={{ alignItems: 'center', justifyContent: 'center', width: tamanho, height: tamanho, marginTop: 8 }}>
             <Svg width={tamanho} height={tamanho} style={{ position: 'absolute' }}>
@@ -86,11 +165,20 @@ function CirculoGasto({ valor, meta = 600 }) {
         </View>
     );
 }
- 
-function BarraNutri({ label, valor, unidade, meta, cor, delay = 0 }) {
+
+type BarraNutriProps = {
+    label: string;
+    valor: number;
+    unidade: string;
+    meta: number;
+    cor: string;
+    delay?: number;
+};
+
+function BarraNutri({ label, valor, unidade, meta, cor, delay = 0 }: BarraNutriProps) {
     const largura = useRef(new Animated.Value(0)).current;
     const opacidade = useRef(new Animated.Value(0)).current;
- 
+
     useEffect(() => {
         const pct = Math.min((valor / meta) * 100, 100);
         Animated.sequence([
@@ -109,7 +197,7 @@ function BarraNutri({ label, valor, unidade, meta, cor, delay = 0 }) {
             ]),
         ]).start();
     }, [valor, meta]);
- 
+
     return (
         <Animated.View style={[styles.nutriItem, { opacity: opacidade }]}>
             <Text style={styles.nutriTexto}>
@@ -132,29 +220,36 @@ function BarraNutri({ label, valor, unidade, meta, cor, delay = 0 }) {
         </Animated.View>
     );
 }
- 
- 
+
+
 export default function Dashboard() {
     const [selectedDate, setSelectedDate] = useState('Hoje, 15 Agosto');
-    const [refeicoes, setRefeicoes]       = useState(REFEICOES_INICIAL);
-    const [modalRemover, setModalRemover] = useState(null);
- 
-    const [perfil, setPerfil] = useState({
+    const [refeicoes, setRefeicoes]       = useState<Refeicao[]>(REFEICOES_INICIAL);
+    const [modalRemover, setModalRemover] = useState<string | null>(null);
+    const [kcalGasto, setKcalGasto] = useState<number>(0);
+
+    const [perfil, setPerfil] = useState<Perfil>({
         id:           null,
         peso_atual:   0,
         meta_peso:    0,
         peso_inicial: 0,
+        objetivo: '',
     });
- 
-    const [nutri] = useState({
+
+    const [nutri] = useState<Nutri>({
         proteina:  45,
         ferro:     12,
         vitB12:    2.4,
         kcalGasto: 245,
     });
- 
+
+
+    const [metaKcal, setMetaKcal] = useState<number>(0);
+    
+    const [metaGasto, setMetaGasto] = useState<number>(600);
+
     const [loadingPerfil, setLoadingPerfil] = useState(true);
- 
+
     useFocusEffect(
         useCallback(() => {
             const carregar = async () => {
@@ -168,17 +263,33 @@ export default function Dashboard() {
                     ));
                     await AsyncStorage.removeItem('receitaEscolhida');
                 }
- 
+
                 try {
                     const usuarioId = await AsyncStorage.getItem('usuarioId');
                     if (!usuarioId) return;
-                    const data = await getUsuarioById(usuarioId);
+                    const data: UsuarioApi = await getUsuarioById(usuarioId);
+                    console.log('dados brutos da API:', JSON.stringify(data));
                     setPerfil({
-                        id:           data.idUser ?? data.id,
-                        peso_atual:   parseFloat(data.pesoAtual ?? data.peso_atual)   || 0,
-                        meta_peso:    parseFloat(data.pesoMeta ?? data.metaPeso ?? data.meta_peso) || 0,
-                        peso_inicial: parseFloat(data.pesoInicial ?? data.peso_inicial) || parseFloat(data.pesoAtual ?? data.peso_atual) || 0,
+                        id:           data.idUser ?? data.id ?? null,
+                        peso_atual:   parseFloat(String(data.pesoAtual ?? data.peso_atual))   || 0,
+                        meta_peso:    parseFloat(String(data.pesoMeta ?? data.metaPeso ?? data.meta_peso)) || 0,
+                        peso_inicial: parseFloat(String(data.pesoInicial ?? data.peso_inicial)) || parseFloat(String(data.pesoAtual ?? data.peso_atual)) || 0,
+                        objetivo: String(data.objetivoSaude ?? '').toLowerCase(),
                     });
+
+                    const pesoUser   = parseFloat(String(data.pesoAtual ?? data.peso_atual)) || 75;
+                    const alturaUser = (parseFloat(String(data.altura)) || 1.68) * 100;
+                    const generoUser = String(data.genero ?? 'Feminino');
+                    const idadeUser  = data.dataNascimento ? calcularIdade(data.dataNascimento) : 28;
+                    const rotinaUser = String(data.rotinaAtividade ?? '');
+
+                    const tmb = calcularTMB(pesoUser, alturaUser, idadeUser, generoUser);
+                    const fator = fatorAtividade(rotinaUser);
+                    const get = Math.round(tmb * fator);
+                    setMetaKcal(get);
+                    setMetaGasto(get);
+                    const gasto = estimativaGasto(tmb, rotinaUser);
+                    setKcalGasto(gasto);
                 } catch (err) {
                     console.error('Erro ao buscar perfil:', err);
                     Alert.alert('Atenção', 'Não foi possível carregar seus dados de peso.');
@@ -186,17 +297,30 @@ export default function Dashboard() {
                     setLoadingPerfil(false);
                 }
             };
- 
+
             setLoadingPerfil(true);
             carregar();
         }, [])
     );
- 
-    const { peso_atual, meta_peso, peso_inicial } = perfil;
-    const faltam       = Math.max(0, parseFloat((peso_atual - meta_peso).toFixed(1)));
-    const progresso    = calcularProgresso(peso_atual, meta_peso, peso_inicial);
-    const metaAtingida = peso_atual <= meta_peso;
- 
+
+    const { peso_atual, meta_peso, peso_inicial, objetivo } = perfil;
+    const mantendo = objetivo.includes('manter');
+    const querPerder = meta_peso < peso_atual;
+    const faltam = Math.max(0, parseFloat(
+    (querPerder
+        ? peso_atual - meta_peso
+        : meta_peso - peso_atual
+    ).toFixed(1)
+));
+    const progresso = calcularProgresso(peso_atual, meta_peso, peso_atual);
+
+    
+
+   const metaAtingida = mantendo
+    ? false
+    : querPerder ? peso_atual <= meta_peso : peso_atual >= meta_peso;
+
+   console.log('perfil:', { peso_atual, meta_peso, peso_inicial, querPerder, metaAtingida, objetivo, mantendo });
     const handleChangeDate = () => {
         Alert.alert('Alterar Data', 'Selecione uma nova data', [
             { text: 'Cancelar', style: 'cancel' },
@@ -204,34 +328,34 @@ export default function Dashboard() {
             { text: 'Ontem', onPress: () => setSelectedDate('Ontem, 14 Agosto') },
         ]);
     };
- 
-    const handleRemover = (id) => {
+
+    const handleRemover = (id: string) => {
         setRefeicoes(prev => prev.map(r =>
             r.id === id ? { ...r, titulo: null, desc: null, imagem: null } : r
         ));
         setModalRemover(null);
     };
- 
+
     const irParaRegistroPeso = () => {
         if (metaAtingida) {
             router.push({
                 pathname: './Metaatingida',
-                params: { peso_atual, meta_peso, peso_inicial },
+                params: { peso_atual: String(peso_atual), meta_peso: String(meta_peso), peso_inicial: String(peso_inicial), objetivo: String(objetivo), },
             });
         } else {
             router.push({
                 pathname: './RegistroPeso',
-                params: { peso_atual, meta_peso, peso_inicial },
+                params: { peso_atual: String(peso_atual), meta_peso: String(meta_peso), peso_inicial: String(peso_inicial), objetivo: String(objetivo) },
             });
         }
     };
- 
+
     const nutrientes = [
         { label: 'Proteína', valor: nutri.proteina, unidade: 'g',  meta: 80, cor: '#7B1FA2', delay: 0   },
         { label: 'Ferro',    valor: nutri.ferro,    unidade: 'mg', meta: 18, cor: '#E53935', delay: 150 },
         { label: 'Vit B12',  valor: nutri.vitB12,   unidade: 'μg', meta: 4,  cor: '#FDD835', delay: 300 },
     ];
- 
+
     return (
         <View style={styles.root}>
             <StatusBar barStyle="light-content" backgroundColor="#2E7D32" />
@@ -247,7 +371,7 @@ export default function Dashboard() {
                         </Text>
                         <TouchableOpacity
                             style={styles.modalBtnRemover}
-                            onPress={() => handleRemover(modalRemover)}>
+                            onPress={() => modalRemover && handleRemover(modalRemover)}>
                             <Text style={styles.modalBtnRemoverTexto}>Sim, remover</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => setModalRemover(null)}>
@@ -256,7 +380,7 @@ export default function Dashboard() {
                     </View>
                 </View>
             </Modal>
- 
+
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
                 <View style={styles.header}>
@@ -268,15 +392,19 @@ export default function Dashboard() {
                 <TouchableOpacity style={styles.cardCalorias} activeOpacity={0.85} onPress={() => router.push('./CalculoCalorias')}>
                     <View style={styles.cardCaloriasRow}>
                         <MaterialCommunityIcons name="fire" size={28} color="#ffffff" />
-                        <Text style={styles.cardCaloriasValor}>
-                            0 <Text style={styles.cardCaloriasUnidade}>Kcal</Text>
-                        </Text>
+                        {loadingPerfil ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.cardCaloriasValor}>
+                                {metaKcal.toLocaleString('pt-BR')} <Text style={styles.cardCaloriasUnidade}>Kcal</Text>
+                            </Text>
+                        )}
                     </View>
                     <Ionicons name="chevron-forward" size={20} color="#aaa" />
                 </TouchableOpacity>
- 
+
                 <View style={styles.cardDuplo}>
- 
+
                     <View style={styles.cardConsumo}>
                         <Text style={styles.cardConsumoTitulo}>Consumo</Text>
                         <Text style={styles.cardConsumoSub}>Foco nutricional{'\n'}diário</Text>
@@ -292,11 +420,11 @@ export default function Dashboard() {
                             />
                         ))}
                     </View>
- 
+
                     <View style={styles.colunaGasto}>
                         <View style={styles.cardGasto}>
                             <Text style={styles.cardGastoTitulo}>Gasto</Text>
-                            <CirculoGasto valor={nutri.kcalGasto} meta={600} />
+                            <CirculoGasto valor={kcalGasto} meta={metaGasto} />
                         </View>
                         <TouchableOpacity
                             style={styles.cardMais}
@@ -306,7 +434,7 @@ export default function Dashboard() {
                             <Ionicons name="chevron-forward" size={14} color="#ffffff" />
                         </TouchableOpacity>
                     </View>
- 
+
                 </View>
 
                 <TouchableOpacity
@@ -328,7 +456,7 @@ export default function Dashboard() {
                                     style={{ marginLeft: 'auto' }}
                                 />
                             </View>
- 
+
                             <View style={styles.metaValores}>
                                 <View>
                                     <Text style={styles.metaLabel}>Atual</Text>
@@ -345,28 +473,30 @@ export default function Dashboard() {
                                     </Text>
                                 </View>
                             </View>
- 
+
                             <View style={styles.progressoBg}>
                                 <View style={[styles.progressoAtivo, { width: `${progresso}%` }]} />
                             </View>
- 
+
                             <Text style={styles.metaHint}>
-                                {metaAtingida
-                                    ? '🎉 Você atingiu sua meta!'
-                                    : `Faltam ${faltam} kg para atingir sua meta`}
+                            {mantendo
+                            ? '⚖️ Mantendo peso'
+                            : metaAtingida
+                            ? '🎉 Você atingiu sua meta!'
+                            : `Faltam ${faltam} kg para atingir sua meta`}
                             </Text>
                         </>
                     )}
                 </TouchableOpacity>
- 
+
                 <Text style={styles.secaoTitulo}>Pratos Escolhidos (Receitas)</Text>
- 
+
                 {refeicoes.map((r) => (
                     <View key={r.id}>
                         <Text style={styles.refeicaoTipo}>{r.tipo}</Text>
                         {r.titulo ? (
                             <View style={styles.cardRefeicao}>
-                                <Image source={{ uri: r.imagem }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                                <Image source={{ uri: r.imagem ?? undefined }} style={StyleSheet.absoluteFill} resizeMode="cover" />
                                 <TouchableOpacity
                                     style={styles.refeicaoIconeRefresh}
                                     onPress={() => router.push({ pathname: './EscolherReceita', params: { refeicao: r.tipo } })}>
@@ -395,11 +525,11 @@ export default function Dashboard() {
                         )}
                     </View>
                 ))}
- 
+
                 <TouchableOpacity style={styles.botaoDieta} activeOpacity={0.85} onPress={() => router.push('./Visualizardieta')}>
                     <Text style={styles.botaoDietaTexto}>Olhar Dieta</Text>
                 </TouchableOpacity>
- 
+
             </ScrollView>
 
             <View style={style.tabBar}>
@@ -416,12 +546,12 @@ export default function Dashboard() {
                     <Text style={styles.tabTexto}>Perfil</Text>
                 </TouchableOpacity>
             </View>
- 
+
         </View>
     );
 }
- 
- 
+
+
 const styles = StyleSheet.create({
     root:                  { flex: 1, backgroundColor: '#2E7D32' },
     scroll:                { paddingBottom: 110 },
@@ -432,9 +562,9 @@ const styles = StyleSheet.create({
     cardCaloriasRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
     cardCaloriasValor:     { fontSize: 28, fontWeight: '800', color: '#ffffff' },
     cardCaloriasUnidade:   { fontSize: 16, fontWeight: '500', color: '#ffffff' },
- 
+
     cardDuplo:             { flexDirection: 'row', marginHorizontal: 18, gap: 12, marginBottom: 14 },
- 
+
     cardConsumo:           { flex: 1.1, backgroundColor: '#3E854D', borderRadius: 20, padding: 16, elevation: 3 },
     cardConsumoTitulo:     { fontSize: 15, fontWeight: '700', color: '#ffffff', marginBottom: 2 },
     cardConsumoSub:        { fontSize: 11, color: '#ffffff', marginBottom: 12, lineHeight: 15 },
@@ -442,7 +572,7 @@ const styles = StyleSheet.create({
     nutriTexto:            { fontSize: 12, color: '#ffffff', fontWeight: '600', marginBottom: 4 },
     barrinhaFundo:         { height: 5, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 3, overflow: 'hidden' },
     barrinhaAtiva:         { height: 5, borderRadius: 3 },
- 
+
     colunaGasto:           { flex: 1, gap: 12 },
     cardGasto:             { flex: 1, backgroundColor: '#3E854D', borderRadius: 20, padding: 14, alignItems: 'center', justifyContent: 'space-between', elevation: 3 },
     cardGastoTitulo:       { fontSize: 14, fontWeight: '700', color: '#ffffff', alignSelf: 'flex-start' },
@@ -450,7 +580,7 @@ const styles = StyleSheet.create({
     circuloUnidade:        { fontSize: 10, color: '#ffffff' },
     cardMais:              { backgroundColor: '#3E854D', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', elevation: 3 },
     maisBtnTexto:          { fontSize: 14, fontWeight: '600', color: '#ffffff' },
- 
+
     card:                  { marginHorizontal: 18, backgroundColor: '#3E854D', borderRadius: 20, padding: 18, marginBottom: 14, elevation: 3 },
     cardTitulo:            { fontSize: 15, fontWeight: '700', color: '#ffffff', marginLeft: 6 },
     metaRow:               { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
@@ -461,7 +591,7 @@ const styles = StyleSheet.create({
     progressoBg:           { height: 8, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 4, overflow: 'hidden', marginBottom: 10 },
     progressoAtivo:        { height: 8, backgroundColor: '#A5D6A7', borderRadius: 4 },
     metaHint:              { fontSize: 12, color: '#ffffff', textAlign: 'center' },
- 
+
     secaoTitulo:           { fontSize: 19, fontWeight: '800', color: '#fff', marginHorizontal: 18, marginTop: 8, marginBottom: 16 },
     refeicaoTipo:          { fontSize: 14, fontWeight: '700', color: '#fff', marginHorizontal: 18, marginBottom: 10 },
     cardRefeicao:          { marginHorizontal: 18, borderRadius: 20, overflow: 'hidden', height: 160, marginBottom: 20 },
@@ -476,7 +606,7 @@ const styles = StyleSheet.create({
     botaoDieta:            { marginHorizontal: 18, backgroundColor: '#fff', borderRadius: 30, paddingVertical: 16, alignItems: 'center', marginTop: 4, marginBottom: 10 },
     botaoDietaTexto:       { fontSize: 16, fontWeight: '700', color: '#2E7D32' },
     tabTexto:              { fontSize: 12, color: '#999', fontWeight: '500', marginTop: 3 },
- 
+
     modalOverlay:          { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
     modalBox:              { backgroundColor: '#fff', borderRadius: 28, padding: 28, alignItems: 'center', width: '100%' },
     modalIcone:            { width: 64, height: 64, borderRadius: 32, backgroundColor: '#FFEBEE', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },

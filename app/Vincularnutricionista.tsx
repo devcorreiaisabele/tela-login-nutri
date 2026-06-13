@@ -63,6 +63,7 @@ export default function VincularNutricionista() {
         setNutriSelecionada(null);
     }
 
+
  async function confirmarVinculo() {
         if (!nutriSelecionada) return;
         setEnviando(true);

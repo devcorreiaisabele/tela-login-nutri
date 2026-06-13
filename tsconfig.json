@@ -13,5 +13,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "app/Dashboard.jsx", "app/Vincularnutricionista.jsx", "app/Receitas.jsx", "app/Vincularnutricionista.jsx", "app/Restricoesadicionais.tsx", "app/Registropeso.tsx", "app/Cadastro.jsx", "app/Metaatingida.jsx"  ]
+, "app/Dashboard.tsx", "app/Vincularnutricionista.jsx", "app/Receitas.jsx", "app/Vincularnutricionista.jsx", "app/Restricoesadicionais.tsx", "app/Registropeso.tsx", "app/Cadastro.jsx", "app/Metaatingida.tsx"  ]
 }

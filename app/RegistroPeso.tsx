@@ -39,7 +39,8 @@ export default function RegistroPeso() {
     const params            = useLocalSearchParams();
     const pesoAtualInicial  = parseFloat(params.peso_atual as string)  || 0;
     const metaPeso          = parseFloat(params.meta_peso as string)   || 0;
-    const pesoInicialHist   = parseFloat(params.peso_inicial as string) || pesoAtualInicial;
+    const objetivo         = String(params.objetivo ?? '').toLowerCase(); 
+const mantendo         = objetivo.includes('manter');
 
     const [pesoSelecionado, setPesoSelecionado] = useState(pesoAtualInicial);
     const [historico, setHistorico]             = useState<any[]>([]);
@@ -68,9 +69,10 @@ export default function RegistroPeso() {
 
     const incrementar  = () => setPesoSelecionado(p => parseFloat((p + 0.5).toFixed(1)));
     const decrementar  = () => setPesoSelecionado(p => Math.max(0, parseFloat((p - 0.5).toFixed(1))));
-    const faltam       = Math.max(0, parseFloat((pesoSelecionado - metaPeso).toFixed(1)));
-    const progresso    = calcularProgresso(pesoSelecionado, metaPeso, pesoInicialHist);
-    const metaAtingida = pesoSelecionado <= metaPeso;
+    const querPerder   = metaPeso < pesoAtualInicial;
+    const faltam       = Math.max(0, parseFloat((querPerder ? pesoSelecionado - metaPeso : metaPeso - pesoSelecionado).toFixed(1)));
+    const progresso = calcularProgresso(pesoSelecionado, metaPeso, pesoAtualInicial);
+    const metaAtingida = querPerder ? pesoSelecionado <= metaPeso : pesoSelecionado >= metaPeso;
 
     async function handleSalvar() {
         setSalvando(true);
@@ -94,13 +96,6 @@ export default function RegistroPeso() {
                 pesoRegistrado: pesoSelecionado,
                 metaProgresso: metaPeso,
             });
-
-            const novoItem = {
-            idEvolucao: Date.now(),
-            dataRegistro: new Date().toISOString(),
-            pesoRegistrado: pesoSelecionado,
-            };
-            setHistorico(prev => [novoItem, ...prev]);
 
             Alert.alert('✅ Peso registrado!', `Seu peso de ${pesoSelecionado} kg foi salvo.`, [
                 {
@@ -152,7 +147,11 @@ export default function RegistroPeso() {
                         <View style={[styles.progressoAtivo, { width: `${progresso}%` }]} />
                     </View>
                     <Text style={styles.cardMetaHint}>
-                        {metaAtingida ? '🎉 Você atingiu sua meta! Parabéns!' : `Faltam ${faltam} kg para atingir sua meta`}
+                        {mantendo
+    ? `⚖️ Mantendo peso: ${pesoSelecionado.toFixed(1)} kg`
+    : metaAtingida
+        ? '🎉 Você atingiu sua meta! Parabéns!'
+        : `Faltam ${faltam} kg para atingir sua meta`}
                     </Text>
                 </View>
 

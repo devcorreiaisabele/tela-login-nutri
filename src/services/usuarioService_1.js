@@ -30,6 +30,7 @@ const montarUsuarioPayload = (atual, dados) => {
     email: novosDados.email ?? atual.email,
     senhaHash: novosDados.senhaHash ?? atual.senhaHash,
     dataNascimento: novosDados.dataNascimento ?? atual.dataNascimento,
+    genero: novosDados.genero ?? atual.genero,
     status: novosDados.status ?? atual.status,
     tipoDieta: novosDados.tipoDieta ?? atual.tipoDieta,
     alergias: novosDados.alergias ?? atual.alergias,
@@ -60,4 +61,4 @@ export const deleteUsuario = async (id) => {
 export const getUsuarioLogado = async () => {
   const id = await AsyncStorage.getItem('usuarioId');
   return await getUsuarioById(id);
-}; 
+};

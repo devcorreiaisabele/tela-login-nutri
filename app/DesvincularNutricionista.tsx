@@ -12,7 +12,8 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { getVinculos, updateVinculo } from '../src/services/vinculoService_1';
+import api from '../src/services/api';
+import { updateVinculo } from '../src/services/vinculoService_1';
 
 export default function DesvincularNutricionista() {
     const params = useLocalSearchParams<{
@@ -27,32 +28,29 @@ export default function DesvincularNutricionista() {
 
     const primeiroNome = (params.nutriNome ?? '').split(' ')[0];
 
-    async function desvincular() {
-        setLoading(true);
-        try {
-            const usuarioId = await AsyncStorage.getItem('usuarioId');
-            const vinculos = await getVinculos();
-            const vinculo = vinculos.find((v: any) =>
-                v.usuario?.idUser?.toString() === usuarioId ||
-                v.fkIdUser?.toString() === usuarioId
-            );
-            if (vinculo) {
-                await updateVinculo(vinculo.idVinculo ?? vinculo.id, { status: 'Encerrado' });
-            }
-            await AsyncStorage.removeItem('nutricionistaVinculada');
-
-            Alert.alert(
-                'Desvinculado!',
-                `${params.nutriNome} não tem mais acesso ao seu diário alimentar.`,
-                [{ text: 'OK', onPress: () => router.replace('./Perfil') }],
-            );
-        } catch (err) {
-            console.error('Erro ao desvincular:', err);
-            Alert.alert('Erro', 'Não foi possível desvincular. Tente novamente.');
-        } finally {
-            setLoading(false);
+async function desvincular() {
+    setLoading(true);
+    try {
+        const usuarioId = await AsyncStorage.getItem('usuarioId');
+        const response = await api.get(`/vinculo/usuario/${usuarioId}`);
+        const vinculos = response.data;
+        const vinculo = vinculos.find((v: any) => v.status === 'Ativo');
+        if (vinculo) {
+            await updateVinculo(vinculo.idVinculo ?? vinculo.id, { ...vinculo, status: 'Encerrado' });
         }
+        await AsyncStorage.removeItem('nutricionistaVinculada');
+        Alert.alert(
+            'Desvinculado!',
+            `${params.nutriNome} não tem mais acesso ao seu diário alimentar.`,
+            [{ text: 'OK', onPress: () => router.replace('./Perfil') }],
+        );
+    } catch (err) {
+        console.error('Erro ao desvincular:', err);
+        Alert.alert('Erro', 'Não foi possível desvincular. Tente novamente.');
+    } finally {
+        setLoading(false);
     }
+}
 
     function vincularOutro() {
         router.replace('./VincularNutricionista');

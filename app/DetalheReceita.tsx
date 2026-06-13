@@ -120,11 +120,39 @@ function listaDeTexto(valor?: string) {
         .filter(Boolean);
 }
 
+
+function removerNumeracao(texto: string) {
+    return texto.replace(/^\d+[\.\)]\s*/, '').trim();
+}
+
+function listaDePassos(valor?: string) {
+    const texto = (valor ?? '').trim();
+    if (!texto) return [];
+
+
+    const linhas = texto
+        .split(/\n|;/)
+        .map(item => item.trim())
+        .filter(Boolean);
+
+    if (linhas.length > 1) {
+        return linhas.map(removerNumeracao);
+    }
+
+
+    const passos = texto
+        .split(/(?=\d+[\.\)]\s)/)
+        .map(item => removerNumeracao(item.trim()))
+        .filter(Boolean);
+
+    return passos.length > 1 ? passos : [removerNumeracao(texto)];
+}
+
 function montarDetalheReceita(dados: any, fallback: any) {
     if (!dados) return fallback;
 
     const ingredientes = listaDeTexto(dados.ingredientes);
-    const preparo = listaDeTexto(dados.modoPreparo);
+    const preparo = listaDePassos(dados.modoPreparo);
 
     return {
         titulo: dados.titulo ?? fallback.titulo,
@@ -172,8 +200,6 @@ export default function DetalheReceita() {
         Alert.alert('✅ Receita salva!', `"${receita.titulo}" foi adicionada às suas receitas salvas.`);
     }
 
-    const totalAvaliacoes = receita.avaliacoes ?? receita.avaliações ?? 0;
-
     if (loading) {
         return (
             <View style={s.loadingBox}>
@@ -213,24 +239,7 @@ export default function DetalheReceita() {
                 </View>
 
                 <View style={s.corpo}>
-                    <View style={s.avalRow}>
-                        <View style={s.avalAvatares}>
-                            {[1, 2, 3].map(i => (
-                                <View key={i} style={[s.avalAvatar, { marginLeft: i === 1 ? 0 : -10 }]}>
-                                    <Ionicons name="person" size={16} color="#ccc" />
-                                </View>
-                            ))}
-                        </View>
-                        <Text style={s.avalTexto}>{totalAvaliacoes} avaliações</Text>
-                        <View style={s.starsRow}>
-                            {[1, 2, 3, 4, 5].map(i => (
-                                <Ionicons key={i} name="star-outline" size={16} color="#F59E0B" />
-                            ))}
-                        </View>
-                    </View>
-
-                    <View style={s.card}>
-                        <Text style={s.cardTitulo}>{receita.titulo}</Text>
+                    <View style={[s.card, { marginTop: 4 }]}>
                         <Text style={s.cardSub}>{receita.subtitulo}</Text>
                         <Text style={s.cardDesc}>{receita.descricao}</Text>
                     </View>

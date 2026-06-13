@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://backend3na-production.up.railway.app',
-  timeout: 10000,
+  baseURL: 'https://backend3na.onrender.com',
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },

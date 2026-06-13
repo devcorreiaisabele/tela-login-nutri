@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { getEvolucoes } from '../src/services/evolucaoService_1';
 import { getNutricionistaById } from '../src/services/nutricionistaService_1';
-import { getVinculos } from '../src/services/vinculoService_1';
 
 
 type Stats = {
@@ -59,26 +58,7 @@ const SUGESTOES_PREVIEW = [
 ];
 
 
-const CONQUISTAS_PREVIEW: Conquista[] = [
-    {
-        id: '1',
-        pacienteNome: 'João Silva',
-        pacienteFoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
-        data: 'Hoje, 09:30',
-        titulo: 'Meta Atingida! 🎯',
-        descricao: 'João alcançou o peso ideal após 3 meses de acompanhamento.',
-        cor: '#2E7D32',
-    },
-    {
-        id: '2',
-        pacienteNome: 'Maria Oliveira',
-        pacienteFoto: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
-        data: 'Ontem, 18:45',
-        titulo: 'Adesão Perfeita 🔥',
-        descricao: '7 dias consecutivos seguindo a dieta 100% à risca.',
-        cor: '#1565C0',
-    },
-];
+const CORES_CONQUISTA = ['#2E7D32', '#1565C0', '#6A1B9A', '#E65100', '#00695C'];
 
 
 function corIconeLembrete(tipo: string): { bg: string; icon: string; color: string } {
@@ -90,11 +70,17 @@ function corIconeLembrete(tipo: string): { bg: string; icon: string; color: stri
     }
 }
 
+function formatarData(dataStr: string): string {
+    if (!dataStr) return '';
+    const d = new Date(dataStr);
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+}
+
 
 export default function DashboardNutricionista() {
     const [nome,       setNome]       = useState('');
     const [stats,      setStats]      = useState<Stats>({ pacientesAtivos: 0, metasAtingidas: 0 });
-    const [conquistas, setConquistas] = useState<Conquista[]>(CONQUISTAS_PREVIEW);
+    const [conquistas, setConquistas] = useState<Conquista[]>([]);
     const [lembretes,  setLembretes]  = useState<Lembrete[]>([]);
     const [loading,    setLoading]    = useState(true);
 
@@ -107,11 +93,11 @@ export default function DashboardNutricionista() {
 
                     if (!nutricionistaId) return;
 
-                    const [nutri, vinculos, evolucoes] = await Promise.all([
-                        getNutricionistaById(nutricionistaId),
-                        getVinculos(),
-                        getEvolucoes(),
+                    const [nutri, evolucoes] = await Promise.all([
+                    getNutricionistaById(nutricionistaId),
+                    getEvolucoes(),
                     ]);
+                    const vinculos: any[] = [];
 
                     const meusVinculos = vinculos.filter((v: any) =>
                         v.nutricionista?.idNutri?.toString() === nutricionistaId ||
@@ -119,20 +105,40 @@ export default function DashboardNutricionista() {
                     );
                     const ativos = meusVinculos.filter((v: any) => (v.status ?? '').toLowerCase() === 'ativo');
                     const pendentes = meusVinculos.filter((v: any) => (v.status ?? '').toLowerCase() === 'pendente');
-                    const metasAtingidas = evolucoes.filter((e: any) =>
-                        e.metaProgresso != null &&
-                        e.pesoRegistrado != null &&
-                        Number(e.pesoRegistrado) <= Number(e.metaProgresso)
-                    ).length;
+
+                    const idsAtivos = new Set(ativos.map((v: any) =>
+                        (v.usuario?.idUser ?? v.fkIdUser)?.toString()
+                    ));
+
+                    const conquistasMapeadas: Conquista[] = evolucoes
+                        .filter((e: any) =>
+                            e.metaProgresso != null &&
+                            e.pesoRegistrado != null &&
+                            Number(e.pesoRegistrado) <= Number(e.metaProgresso) &&
+                            idsAtivos.has((e.usuario?.idUser ?? e.fkIdUser)?.toString())
+                        )
+                        .slice(0, 5)
+                        .map((e: any, idx: number) => ({
+                            id: (e.idEvolucao ?? e.id ?? idx).toString(),
+                            pacienteNome: e.usuario?.nomeCompleto ?? 'Paciente',
+                            pacienteFoto: null,
+                            data: formatarData(e.dataRegistro ?? e.data ?? ''),
+                            titulo: 'Meta Atingida! 🎯',
+                            descricao: `${e.usuario?.nomeCompleto ?? 'Paciente'} atingiu o peso de ${e.pesoRegistrado}kg.`,
+                            cor: CORES_CONQUISTA[idx % CORES_CONQUISTA.length],
+                        }));
+
+                    const metasAtingidas = conquistasMapeadas.length;
 
                     setNome(nutri.nomeCompleto ?? '');
                     setStats({ pacientesAtivos: ativos.length, metasAtingidas });
+                    setConquistas(conquistasMapeadas);
                     setLembretes(pendentes.map((v: any) => ({
-                        id: (v.idVinculo ?? v.id).toString(),
-                        tipo: 'vinculo' as const,
-                        titulo: 'SolicitaÃ§Ã£o de vÃ­nculo',
-                        descricao: `${v.usuario?.nomeCompleto ?? 'Paciente'} aguarda sua resposta.`,
-                        acaoBotao: 'Ver',
+                    id: (v.idVinculo ?? v.id).toString(),
+                    tipo: 'vinculo' as const,
+                    titulo: 'Solicitação de vínculo',
+                    descricao: `${v.nutricionistaNome ?? 'Paciente'} aguarda sua resposta.`,
+                    acaoBotao: 'Ver',
                     })));
                 } catch (err) {
                     console.error('Erro ao carregar dashboard:', err);
@@ -239,37 +245,46 @@ export default function DashboardNutricionista() {
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.conquistasLista}
-                        style={{ marginBottom: 28 }}
-                    >
-                        {conquistas.map(c => (
-                            <TouchableOpacity
-                                key={c.id}
-                                style={[styles.conquistaCard, { backgroundColor: c.cor }]}
-                                activeOpacity={0.88}
-                                onPress={() => router.push('./TodasConquistas')}
-                            >
-                                <View style={styles.conquistaTop}>
-                                    {c.pacienteFoto ? (
-                                        <Image source={{ uri: c.pacienteFoto }} style={styles.conquistaAvatar} />
-                                    ) : (
-                                        <View style={styles.conquistaAvatarPlaceholder}>
-                                            <Ionicons name="person" size={18} color="rgba(255,255,255,0.7)" />
+                    {conquistas.length === 0 ? (
+                        <View style={[styles.vazioCard, { marginBottom: 28 }]}>
+                            <MaterialCommunityIcons name="trophy-outline" size={36} color="#ccc" />
+                            <Text style={styles.vazioTitulo}>Nenhuma conquista ainda</Text>
+                            <Text style={styles.vazioDesc}>As metas atingidas pelos seus pacientes aparecerão aqui.</Text>
+                        </View>
+                    ) : (
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.conquistasLista}
+                            style={{ marginBottom: 28 }}
+                        >
+                            {conquistas.map(c => (
+                                <TouchableOpacity
+                                    key={c.id}
+                                    style={[styles.conquistaCard, { backgroundColor: c.cor }]}
+                                    activeOpacity={0.88}
+                                    onPress={() => router.push('./TodasConquistas')}
+                                >
+                                    <View style={styles.conquistaTop}>
+                                        {c.pacienteFoto ? (
+                                            <Image source={{ uri: c.pacienteFoto }} style={styles.conquistaAvatar} />
+                                        ) : (
+                                            <View style={styles.conquistaAvatarPlaceholder}>
+                                                <Ionicons name="person" size={18} color="rgba(255,255,255,0.7)" />
+                                            </View>
+                                        )}
+                                        <View>
+                                            <Text style={styles.conquistaPaciente}>{c.pacienteNome}</Text>
+                                            <Text style={styles.conquistaData}>{c.data}</Text>
                                         </View>
-                                    )}
-                                    <View>
-                                        <Text style={styles.conquistaPaciente}>{c.pacienteNome}</Text>
-                                        <Text style={styles.conquistaData}>{c.data}</Text>
                                     </View>
-                                </View>
-                                <Text style={styles.conquistaTitulo}>{c.titulo}</Text>
-                                <Text style={styles.conquistaDesc} numberOfLines={2}>{c.descricao}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
+                                    <Text style={styles.conquistaTitulo}>{c.titulo}</Text>
+                                    <Text style={styles.conquistaDesc} numberOfLines={2}>{c.descricao}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    )}
+
                     <Text style={[styles.secaoTitulo, { marginBottom: 14 }]}>
                         Lembretes Pendentes
                     </Text>

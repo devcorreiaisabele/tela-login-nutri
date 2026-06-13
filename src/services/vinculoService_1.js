@@ -28,5 +28,21 @@ export const deleteVinculo = async (id) => {
 export const getVinculoAtivoByUsuario = async (usuarioId) => {
   const response = await api.get(`/vinculo/usuario/${usuarioId}`);
   const vinculos = response.data;
-  return vinculos.find((v) => v.status === 'Ativo') ?? null;
+  return vinculos.find((v) => v.status === 'Ativo') ?? null;};
+
+  export const ativarVinculoPendente = async (usuarioId, nutricionistaId) => {
+  const response = await api.get(`/vinculo/usuario/${usuarioId}`);
+  const vinculos = response.data;
+  const pendente = vinculos.find(
+    (v) => v.status === 'Pendente' && v.fkIdNutri === Number(nutricionistaId)
+  );
+  if (pendente) {
+    return await updateVinculo(pendente.idVinculo, { status: 'Ativo' });
+  }
+  return await createVinculo({
+    usuarioId: Number(usuarioId),
+    nutricionistaId: Number(nutricionistaId),
+    dataSolicitacao: new Date().toISOString().split('T')[0],
+    status: 'Ativo',
+  });
 };

@@ -10,10 +10,16 @@ import {
     View,
 } from 'react-native';
 
+type Params = {
+    peso_atual: string;
+    meta_peso:  string;
+};
+
 export default function MetaAtingida() {
-    const params = useLocalSearchParams();
-    const peso_atual = parseFloat(params.peso_atual) || 0;
-    const meta_peso  = parseFloat(params.meta_peso)  || 0;
+    const params = useLocalSearchParams<Params>();
+    const peso_atual = parseFloat(params.peso_atual ?? '0') || 0;
+    const meta_peso  = parseFloat(params.meta_peso  ?? '0') || 0;
+
     const trofeuScale   = useRef(new Animated.Value(0)).current;
     const trofeuOpacity = useRef(new Animated.Value(0)).current;
     const textOpacity   = useRef(new Animated.Value(0)).current;
@@ -38,14 +44,14 @@ export default function MetaAtingida() {
         ]).start();
     }, []);
 
-  const handleMudarMeta = () => {
-    router.push({
-        pathname: './Alterarmeta',
-        params: { peso_atual },
-    });
-};
+    const handleMudarMeta = (): void => {
+        router.push({
+            pathname: './Alterarmeta',
+            params: { peso_atual },
+        });
+    };
 
-    const handleManterPeso = () => {
+    const handleManterPeso = (): void => {
         router.back();
     };
 
@@ -64,7 +70,6 @@ export default function MetaAtingida() {
                     Você atingiu a sua meta com sucesso.{'\n'}Todo o seu esforço valeu a pena!
                 </Text>
             </Animated.View>
-
 
             <Animated.View style={[styles.card, { opacity: cardOpacity, transform: [{ translateY: cardTranslate }] }]}>
                 <View style={styles.cardHeader}>
