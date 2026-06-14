@@ -45,4 +45,10 @@ export const getVinculoAtivoByUsuario = async (usuarioId) => {
     dataSolicitacao: new Date().toISOString().split('T')[0],
     status: 'Ativo',
   });
+  
+};
+
+export const getVinculosByNutricionista = async (nutricionistaId) => {
+  const response = await api.get(`/vinculo/nutricionista/${nutricionistaId}`);
+  return response.data;
 };

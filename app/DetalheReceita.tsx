@@ -3,7 +3,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     Dimensions,
     Image,
     ScrollView,
@@ -11,7 +10,7 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { getReceitaById } from '../src/services/receitaService_1';
 
@@ -175,7 +174,6 @@ export default function DetalheReceita() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const fallback = RECEITAS_DETALHES[id ?? '1'] ?? RECEITAS_DETALHES['1'];
     const [receita, setReceita] = useState<any>(fallback);
-    const [salva, setSalva] = useState(false);
     const [loading, setLoading] = useState(Boolean(id));
 
     useEffect(() => {
@@ -195,10 +193,6 @@ export default function DetalheReceita() {
         carregarReceita();
     }, [id]);
 
-    function salvarReceita() {
-        setSalva(true);
-        Alert.alert('✅ Receita salva!', `"${receita.titulo}" foi adicionada às suas receitas salvas.`);
-    }
 
     if (loading) {
         return (
@@ -284,23 +278,6 @@ export default function DetalheReceita() {
                     <View style={{ height: 100 }} />
                 </View>
             </ScrollView>
-
-            <View style={s.rodape}>
-                <TouchableOpacity
-                    style={[s.btnSalvar, salva && s.btnSalvarAtivo]}
-                    onPress={salvarReceita}
-                    activeOpacity={0.85}
-                    disabled={salva}
-                >
-                    {salva
-                        ? <Ionicons name="checkmark" size={20} color="#fff" style={{ marginRight: 8 }} />
-                        : null
-                    }
-                    <Text style={s.btnSalvarTexto}>
-                        {salva ? 'Receita Salva!' : 'Salvar Receita'}
-                    </Text>
-                </TouchableOpacity>
-            </View>
         </View>
     );
 }

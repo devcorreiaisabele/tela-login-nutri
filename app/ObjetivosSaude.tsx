@@ -50,6 +50,8 @@ export default function ObjetivosSaude() {
     try {
       const usuarioId = await AsyncStorage.getItem('usuarioId');
       console.warn('ID DO USUARIO: ' + usuarioId);
+      console.warn('DATA NASCIMENTO:', dataNascimento);
+      console.warn('DIA:', diaNascimento, 'MES:', mesNascimento, 'ANO:', anoNascimento);
       if (usuarioId) await updateUsuario(usuarioId, {
         objetivoSaude: objetivoSelecionado,
         rotinaAtividade: rotinaSelecionada,

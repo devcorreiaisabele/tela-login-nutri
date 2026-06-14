@@ -11,6 +11,7 @@ export const getPlanoById = async (id) => {
 };
 
 export const getPlanosByUsuario = async (usuarioId) => {
+console.log('ID DO PACIENTE:', usuarioId, typeof usuarioId);
   const response = await api.get(`/plano/usuario/${usuarioId}`);
   return response.data;
 };

@@ -17,8 +17,8 @@ import {
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { globalStyles as style } from '../props/globalStyles';
-import { getUsuarioById } from '../src/services/usuarioService_1';
-
+import { getOuCriarPlanoUsuario, getReceitasDoPlano, removerReceitaDoPlano } from '../src/services/planoReceitaService';
+import { getUsuarioById, updateUsuario } from '../src/services/usuarioService_1';
 
 type Refeicao = {
     id: string;
@@ -26,6 +26,8 @@ type Refeicao = {
     titulo: string | null;
     desc: string | null;
     imagem: string | null;
+    idPlanoReceita?: number;
+    receitaId?: number;
 };
 
 type Perfil = {
@@ -53,7 +55,7 @@ type UsuarioApi = {
     meta_peso?: string | number;
     pesoInicial?: string | number;
     peso_inicial?: string | number;
-        objetivoSaude?: string; 
+    objetivoSaude?: string;
     altura?: string | number;
     genero?: string;
     dataNascimento?: string;
@@ -90,7 +92,6 @@ function calcularIdade(dataNascimento: string): number {
     return idade;
 }
 
-
 function fatorAtividade(rotina: string): number {
     const r = rotina.toLowerCase();
     if (r.includes('muito ativ') || r.includes('extrema')) return 1.9;
@@ -98,14 +99,14 @@ function fatorAtividade(rotina: string): number {
     if (r.includes('moderad')) return 1.55;
     if (r.includes('leve')) return 1.375;
     if (r.includes('sedentari') || r.includes('sedentár')) return 1.2;
-    return 1.375; 
+    return 1.375;
 }
 
 function estimativaGasto(tmb: number, rotina: string): number {
     const r = rotina.toLowerCase();
     if (r.includes('atleta')) return Math.round(tmb * 0.7);
     if (r.includes('ativ'))   return Math.round(tmb * 0.5);
-    return Math.round(tmb * 0.3); 
+    return Math.round(tmb * 0.3);
 }
 
 type CirculoGastoProps = {
@@ -143,21 +144,12 @@ function CirculoGasto({ valor, meta = 600 }: CirculoGastoProps) {
     return (
         <View style={{ alignItems: 'center', justifyContent: 'center', width: tamanho, height: tamanho, marginTop: 8 }}>
             <Svg width={tamanho} height={tamanho} style={{ position: 'absolute' }}>
+                <Circle cx={cx} cy={cy} r={raio} stroke="rgba(255,255,255,0.2)" strokeWidth={6} fill="none" />
                 <Circle
                     cx={cx} cy={cy} r={raio}
-                    stroke="rgba(255,255,255,0.2)"
-                    strokeWidth={6}
-                    fill="none"
-                />
-                <Circle
-                    cx={cx} cy={cy} r={raio}
-                    stroke="#A5D6A7"
-                    strokeWidth={6}
-                    fill="none"
+                    stroke="#A5D6A7" strokeWidth={6} fill="none"
                     strokeDasharray={`${dash} ${gap}`}
-                    strokeLinecap="round"
-                    rotation="-90"
-                    origin={`${cx}, ${cy}`}
+                    strokeLinecap="round" rotation="-90" origin={`${cx}, ${cy}`}
                 />
             </Svg>
             <Text style={styles.circuloValor}>{valor}</Text>
@@ -184,97 +176,86 @@ function BarraNutri({ label, valor, unidade, meta, cor, delay = 0 }: BarraNutriP
         Animated.sequence([
             Animated.delay(delay),
             Animated.parallel([
-                Animated.timing(opacidade, {
-                    toValue: 1,
-                    duration: 350,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(largura, {
-                    toValue: pct,
-                    duration: 900,
-                    useNativeDriver: false,
-                }),
+                Animated.timing(opacidade, { toValue: 1, duration: 350, useNativeDriver: true }),
+                Animated.timing(largura, { toValue: pct, duration: 900, useNativeDriver: false }),
             ]),
         ]).start();
     }, [valor, meta]);
 
     return (
         <Animated.View style={[styles.nutriItem, { opacity: opacidade }]}>
-            <Text style={styles.nutriTexto}>
-                {valor}{unidade} {label}
-            </Text>
+            <Text style={styles.nutriTexto}>{valor}{unidade} {label}</Text>
             <View style={styles.barrinhaFundo}>
                 <Animated.View
-                    style={[
-                        styles.barrinhaAtiva,
-                        {
-                            backgroundColor: cor,
-                            width: largura.interpolate({
-                                inputRange:  [0, 100],
-                                outputRange: ['0%', '100%'],
-                            }),
-                        },
-                    ]}
+                    style={[styles.barrinhaAtiva, {
+                        backgroundColor: cor,
+                        width: largura.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }),
+                    }]}
                 />
             </View>
         </Animated.View>
     );
 }
 
-
 export default function Dashboard() {
     const [selectedDate, setSelectedDate] = useState('Hoje, 15 Agosto');
     const [refeicoes, setRefeicoes]       = useState<Refeicao[]>(REFEICOES_INICIAL);
     const [modalRemover, setModalRemover] = useState<string | null>(null);
-    const [kcalGasto, setKcalGasto] = useState<number>(0);
+    const [kcalGasto, setKcalGasto]       = useState<number>(0);
+    const [loadingPerfil, setLoadingPerfil] = useState(true);
 
     const [perfil, setPerfil] = useState<Perfil>({
-        id:           null,
-        peso_atual:   0,
-        meta_peso:    0,
-        peso_inicial: 0,
-        objetivo: '',
+        id: null, peso_atual: 0, meta_peso: 0, peso_inicial: 0, objetivo: '',
     });
 
     const [nutri] = useState<Nutri>({
-        proteina:  45,
-        ferro:     12,
-        vitB12:    2.4,
-        kcalGasto: 245,
+        proteina: 45, ferro: 12, vitB12: 2.4, kcalGasto: 245,
     });
 
-
-    const [metaKcal, setMetaKcal] = useState<number>(0);
-    
+    const [metaKcal,  setMetaKcal]  = useState<number>(0);
     const [metaGasto, setMetaGasto] = useState<number>(600);
-
-    const [loadingPerfil, setLoadingPerfil] = useState(true);
 
     useFocusEffect(
         useCallback(() => {
             const carregar = async () => {
-                const dados = await AsyncStorage.getItem('receitaEscolhida');
-                if (dados) {
-                    const escolhida = JSON.parse(dados);
-                    setRefeicoes(prev => prev.map(r =>
-                        r.tipo === escolhida.refeicao
-                            ? { ...r, titulo: escolhida.titulo, desc: escolhida.desc, imagem: escolhida.imagem }
-                            : r
-                    ));
-                    await AsyncStorage.removeItem('receitaEscolhida');
-                }
-
                 try {
                     const usuarioId = await AsyncStorage.getItem('usuarioId');
                     if (!usuarioId) return;
+
+                    
+                    try {
+                        const plano = await getOuCriarPlanoUsuario(usuarioId);
+                        const receitasDoPlano = await getReceitasDoPlano(plano.idPlano);
+
+                        const refAtualizadas = REFEICOES_INICIAL.map(r => {
+                            const encontrada = receitasDoPlano.find(
+                                (pr: any) => pr.tipoRefeicao === r.tipo
+                            );
+                            if (encontrada) {
+                                return {
+                                    ...r,
+                                    idPlanoReceita: encontrada.idPlanoReceita,
+                                    receitaId: encontrada.fkIdReceita,
+                                    titulo: encontrada.receitaTitulo,
+                                    desc:   encontrada.receitaIngredientes,
+                                    imagem: encontrada.receitaImagemUrl ?? null,
+                                };
+                            }
+                            return r;
+                        });
+                        setRefeicoes(refAtualizadas);
+                    } catch (e) {
+                        console.log('Erro ao carregar receitas do plano:', e);
+                    }
+
+                  
                     const data: UsuarioApi = await getUsuarioById(usuarioId);
-                    console.log('dados brutos da API:', JSON.stringify(data));
                     setPerfil({
                         id:           data.idUser ?? data.id ?? null,
                         peso_atual:   parseFloat(String(data.pesoAtual ?? data.peso_atual))   || 0,
                         meta_peso:    parseFloat(String(data.pesoMeta ?? data.metaPeso ?? data.meta_peso)) || 0,
                         peso_inicial: parseFloat(String(data.pesoInicial ?? data.peso_inicial)) || parseFloat(String(data.pesoAtual ?? data.peso_atual)) || 0,
-                        objetivo: String(data.objetivoSaude ?? '').toLowerCase(),
+                        objetivo:     String(data.objetivoSaude ?? '').toLowerCase(),
                     });
 
                     const pesoUser   = parseFloat(String(data.pesoAtual ?? data.peso_atual)) || 75;
@@ -283,13 +264,14 @@ export default function Dashboard() {
                     const idadeUser  = data.dataNascimento ? calcularIdade(data.dataNascimento) : 28;
                     const rotinaUser = String(data.rotinaAtividade ?? '');
 
-                    const tmb = calcularTMB(pesoUser, alturaUser, idadeUser, generoUser);
+                    const tmb   = calcularTMB(pesoUser, alturaUser, idadeUser, generoUser);
                     const fator = fatorAtividade(rotinaUser);
-                    const get = Math.round(tmb * fator);
+                    const get   = Math.round(tmb * fator);
                     setMetaKcal(get);
                     setMetaGasto(get);
-                    const gasto = estimativaGasto(tmb, rotinaUser);
-                    setKcalGasto(gasto);
+                    setKcalGasto(estimativaGasto(tmb, rotinaUser));
+                    const idUser = perfil.id ?? parseInt(usuarioId!);
+                    await updateUsuario(String(idUser), { caloriasDiarias: get });
                 } catch (err) {
                     console.error('Erro ao buscar perfil:', err);
                     Alert.alert('Atenção', 'Não foi possível carregar seus dados de peso.');
@@ -304,23 +286,12 @@ export default function Dashboard() {
     );
 
     const { peso_atual, meta_peso, peso_inicial, objetivo } = perfil;
-    const mantendo = objetivo.includes('manter');
+    const mantendo   = objetivo.includes('manter');
     const querPerder = meta_peso < peso_atual;
-    const faltam = Math.max(0, parseFloat(
-    (querPerder
-        ? peso_atual - meta_peso
-        : meta_peso - peso_atual
-    ).toFixed(1)
-));
-    const progresso = calcularProgresso(peso_atual, meta_peso, peso_atual);
+    const faltam     = Math.max(0, parseFloat((querPerder ? peso_atual - meta_peso : meta_peso - peso_atual).toFixed(1)));
+    const progresso  = calcularProgresso(peso_atual, meta_peso, peso_atual);
+    const metaAtingida = mantendo ? false : querPerder ? peso_atual <= meta_peso : peso_atual >= meta_peso;
 
-    
-
-   const metaAtingida = mantendo
-    ? false
-    : querPerder ? peso_atual <= meta_peso : peso_atual >= meta_peso;
-
-   console.log('perfil:', { peso_atual, meta_peso, peso_inicial, querPerder, metaAtingida, objetivo, mantendo });
     const handleChangeDate = () => {
         Alert.alert('Alterar Data', 'Selecione uma nova data', [
             { text: 'Cancelar', style: 'cancel' },
@@ -329,24 +300,26 @@ export default function Dashboard() {
         ]);
     };
 
-    const handleRemover = (id: string) => {
+    const handleRemover = async (id: string) => {
+        const refeicao = refeicoes.find(r => r.id === id);
+        if (refeicao?.idPlanoReceita) {
+            try {
+                await removerReceitaDoPlano(refeicao.idPlanoReceita);
+            } catch (e) {
+                console.log('Erro ao remover receita do plano:', e);
+            }
+        }
         setRefeicoes(prev => prev.map(r =>
-            r.id === id ? { ...r, titulo: null, desc: null, imagem: null } : r
+            r.id === id ? { ...r, titulo: null, desc: null, imagem: null, idPlanoReceita: undefined } : r
         ));
         setModalRemover(null);
     };
 
     const irParaRegistroPeso = () => {
         if (metaAtingida) {
-            router.push({
-                pathname: './Metaatingida',
-                params: { peso_atual: String(peso_atual), meta_peso: String(meta_peso), peso_inicial: String(peso_inicial), objetivo: String(objetivo), },
-            });
+            router.push({ pathname: './Metaatingida', params: { peso_atual: String(peso_atual), meta_peso: String(meta_peso), peso_inicial: String(peso_inicial), objetivo: String(objetivo) } });
         } else {
-            router.push({
-                pathname: './RegistroPeso',
-                params: { peso_atual: String(peso_atual), meta_peso: String(meta_peso), peso_inicial: String(peso_inicial), objetivo: String(objetivo) },
-            });
+            router.push({ pathname: './RegistroPeso', params: { peso_atual: String(peso_atual), meta_peso: String(meta_peso), peso_inicial: String(peso_inicial), objetivo: String(objetivo) } });
         }
     };
 
@@ -369,9 +342,7 @@ export default function Dashboard() {
                         <Text style={styles.modalDesc}>
                             Tem certeza que deseja remover esta receita do seu plano alimentar? Você poderá adicioná-la novamente depois.
                         </Text>
-                        <TouchableOpacity
-                            style={styles.modalBtnRemover}
-                            onPress={() => modalRemover && handleRemover(modalRemover)}>
+                        <TouchableOpacity style={styles.modalBtnRemover} onPress={() => modalRemover && handleRemover(modalRemover)}>
                             <Text style={styles.modalBtnRemoverTexto}>Sim, remover</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => setModalRemover(null)}>
@@ -382,13 +353,13 @@ export default function Dashboard() {
             </Modal>
 
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
                 <View style={styles.header}>
                     <Text style={styles.headerData}>{selectedDate}</Text>
                     <TouchableOpacity onPress={handleChangeDate}>
                         <Text style={styles.headerAlterar}>Alterar data</Text>
                     </TouchableOpacity>
                 </View>
+
                 <TouchableOpacity style={styles.cardCalorias} activeOpacity={0.85} onPress={() => router.push('./CalculoCalorias')}>
                     <View style={styles.cardCaloriasRow}>
                         <MaterialCommunityIcons name="fire" size={28} color="#ffffff" />
@@ -404,44 +375,26 @@ export default function Dashboard() {
                 </TouchableOpacity>
 
                 <View style={styles.cardDuplo}>
-
                     <View style={styles.cardConsumo}>
                         <Text style={styles.cardConsumoTitulo}>Consumo</Text>
                         <Text style={styles.cardConsumoSub}>Foco nutricional{'\n'}diário</Text>
                         {nutrientes.map((n) => (
-                            <BarraNutri
-                                key={n.label}
-                                label={n.label}
-                                valor={n.valor}
-                                unidade={n.unidade}
-                                meta={n.meta}
-                                cor={n.cor}
-                                delay={n.delay}
-                            />
+                            <BarraNutri key={n.label} label={n.label} valor={n.valor} unidade={n.unidade} meta={n.meta} cor={n.cor} delay={n.delay} />
                         ))}
                     </View>
-
                     <View style={styles.colunaGasto}>
                         <View style={styles.cardGasto}>
                             <Text style={styles.cardGastoTitulo}>Gasto</Text>
                             <CirculoGasto valor={kcalGasto} meta={metaGasto} />
                         </View>
-                        <TouchableOpacity
-                            style={styles.cardMais}
-                            activeOpacity={0.8}
-                            onPress={() => router.push('./MaisDetalhes')}>
+                        <TouchableOpacity style={styles.cardMais} activeOpacity={0.8} onPress={() => router.push('./MaisDetalhes')}>
                             <Text style={styles.maisBtnTexto}>Mais</Text>
                             <Ionicons name="chevron-forward" size={14} color="#ffffff" />
                         </TouchableOpacity>
                     </View>
-
                 </View>
 
-                <TouchableOpacity
-                    style={styles.card}
-                    activeOpacity={0.85}
-                    onPress={irParaRegistroPeso}
-                >
+                <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={irParaRegistroPeso}>
                     {loadingPerfil ? (
                         <ActivityIndicator color="#fff" style={{ paddingVertical: 20 }} />
                     ) : (
@@ -449,41 +402,23 @@ export default function Dashboard() {
                             <View style={styles.metaRow}>
                                 <MaterialCommunityIcons name="target" size={20} color="#ffffff" />
                                 <Text style={styles.cardTitulo}>Meta de Peso</Text>
-                                <Ionicons
-                                    name="chevron-forward"
-                                    size={18}
-                                    color="rgba(255,255,255,0.6)"
-                                    style={{ marginLeft: 'auto' }}
-                                />
+                                <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.6)" style={{ marginLeft: 'auto' }} />
                             </View>
-
                             <View style={styles.metaValores}>
                                 <View>
                                     <Text style={styles.metaLabel}>Atual</Text>
-                                    <Text style={styles.metaValor}>
-                                        {peso_atual.toFixed(1)}
-                                        <Text style={styles.metaKg}> kg</Text>
-                                    </Text>
+                                    <Text style={styles.metaValor}>{peso_atual.toFixed(1)}<Text style={styles.metaKg}> kg</Text></Text>
                                 </View>
                                 <View style={{ alignItems: 'flex-end' }}>
                                     <Text style={styles.metaLabel}>Alvo</Text>
-                                    <Text style={styles.metaValor}>
-                                        {meta_peso.toFixed(1)}
-                                        <Text style={styles.metaKg}> kg</Text>
-                                    </Text>
+                                    <Text style={styles.metaValor}>{meta_peso.toFixed(1)}<Text style={styles.metaKg}> kg</Text></Text>
                                 </View>
                             </View>
-
                             <View style={styles.progressoBg}>
                                 <View style={[styles.progressoAtivo, { width: `${progresso}%` }]} />
                             </View>
-
                             <Text style={styles.metaHint}>
-                            {mantendo
-                            ? '⚖️ Mantendo peso'
-                            : metaAtingida
-                            ? '🎉 Você atingiu sua meta!'
-                            : `Faltam ${faltam} kg para atingir sua meta`}
+                                {mantendo ? '⚖️ Mantendo peso' : metaAtingida ? '🎉 Você atingiu sua meta!' : `Faltam ${faltam} kg para atingir sua meta`}
                             </Text>
                         </>
                     )}
@@ -491,32 +426,31 @@ export default function Dashboard() {
 
                 <Text style={styles.secaoTitulo}>Pratos Escolhidos (Receitas)</Text>
 
-                {refeicoes.map((r) => (
-                    <View key={r.id}>
-                        <Text style={styles.refeicaoTipo}>{r.tipo}</Text>
-                        {r.titulo ? (
-                            <View style={styles.cardRefeicao}>
-                                <Image source={{ uri: r.imagem ?? undefined }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-                                <TouchableOpacity
-                                    style={styles.refeicaoIconeRefresh}
-                                    onPress={() => router.push({ pathname: './EscolherReceita', params: { refeicao: r.tipo } })}>
-                                    <Ionicons name="refresh" size={16} color="#fff" />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={styles.refeicaoIconeLixo}
-                                    onPress={() => setModalRemover(r.id)}>
-                                    <Ionicons name="trash-outline" size={16} color="#fff" />
-                                </TouchableOpacity>
-                                <View style={styles.cardRefeicaoOverlay}>
-                                    <Text style={styles.cardRefeicaoTitulo}>{r.titulo}</Text>
-                                    <Text style={styles.cardRefeicaoDesc}>{r.desc}</Text>
-                                </View>
-                            </View>
-                        ) : (
-                            <TouchableOpacity
-                                style={styles.cardVazio}
-                                activeOpacity={0.7}
-                                onPress={() => router.push({ pathname: './EscolherReceita', params: { refeicao: r.tipo } })}>
+               {refeicoes.map((r) => (
+    <View key={r.id}>
+        <Text style={styles.refeicaoTipo}>{r.tipo}</Text>
+        {r.titulo ? (
+    <View style={styles.cardRefeicaoWrapper}>
+        <TouchableOpacity
+            style={styles.cardRefeicao}
+            activeOpacity={0.9}
+            onPress={() => r.receitaId && router.push({ pathname: './DetalheReceita', params: { id: String(r.receitaId) } })}
+        >
+            <Image source={{ uri: r.imagem ?? undefined }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <TouchableOpacity style={styles.refeicaoIconeRefresh} onPress={() => router.push({ pathname: './EscolherReceita', params: { refeicao: r.tipo } })}>
+                <Ionicons name="refresh" size={16} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.refeicaoIconeLixo} onPress={() => setModalRemover(r.id)}>
+                <Ionicons name="trash-outline" size={16} color="#fff" />
+            </TouchableOpacity>
+            <View style={styles.cardRefeicaoOverlay}>
+                <Text style={styles.cardRefeicaoTitulo}>{r.titulo}</Text>
+                <Text style={styles.cardRefeicaoDesc}>{r.desc}</Text>
+            </View>
+        </TouchableOpacity>
+    </View>
+) : (
+                            <TouchableOpacity style={styles.cardVazio} activeOpacity={0.7} onPress={() => router.push({ pathname: './EscolherReceita', params: { refeicao: r.tipo } })}>
                                 <View style={styles.cardVazioIcone}>
                                     <Ionicons name="add" size={30} color="#ffffff" />
                                 </View>
@@ -525,11 +459,6 @@ export default function Dashboard() {
                         )}
                     </View>
                 ))}
-
-                <TouchableOpacity style={styles.botaoDieta} activeOpacity={0.85} onPress={() => router.push('./Visualizardieta')}>
-                    <Text style={styles.botaoDietaTexto}>Olhar Dieta</Text>
-                </TouchableOpacity>
-
             </ScrollView>
 
             <View style={style.tabBar}>
@@ -546,11 +475,9 @@ export default function Dashboard() {
                     <Text style={styles.tabTexto}>Perfil</Text>
                 </TouchableOpacity>
             </View>
-
         </View>
     );
 }
-
 
 const styles = StyleSheet.create({
     root:                  { flex: 1, backgroundColor: '#2E7D32' },
@@ -562,9 +489,7 @@ const styles = StyleSheet.create({
     cardCaloriasRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
     cardCaloriasValor:     { fontSize: 28, fontWeight: '800', color: '#ffffff' },
     cardCaloriasUnidade:   { fontSize: 16, fontWeight: '500', color: '#ffffff' },
-
     cardDuplo:             { flexDirection: 'row', marginHorizontal: 18, gap: 12, marginBottom: 14 },
-
     cardConsumo:           { flex: 1.1, backgroundColor: '#3E854D', borderRadius: 20, padding: 16, elevation: 3 },
     cardConsumoTitulo:     { fontSize: 15, fontWeight: '700', color: '#ffffff', marginBottom: 2 },
     cardConsumoSub:        { fontSize: 11, color: '#ffffff', marginBottom: 12, lineHeight: 15 },
@@ -572,7 +497,6 @@ const styles = StyleSheet.create({
     nutriTexto:            { fontSize: 12, color: '#ffffff', fontWeight: '600', marginBottom: 4 },
     barrinhaFundo:         { height: 5, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 3, overflow: 'hidden' },
     barrinhaAtiva:         { height: 5, borderRadius: 3 },
-
     colunaGasto:           { flex: 1, gap: 12 },
     cardGasto:             { flex: 1, backgroundColor: '#3E854D', borderRadius: 20, padding: 14, alignItems: 'center', justifyContent: 'space-between', elevation: 3 },
     cardGastoTitulo:       { fontSize: 14, fontWeight: '700', color: '#ffffff', alignSelf: 'flex-start' },
@@ -580,7 +504,6 @@ const styles = StyleSheet.create({
     circuloUnidade:        { fontSize: 10, color: '#ffffff' },
     cardMais:              { backgroundColor: '#3E854D', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', elevation: 3 },
     maisBtnTexto:          { fontSize: 14, fontWeight: '600', color: '#ffffff' },
-
     card:                  { marginHorizontal: 18, backgroundColor: '#3E854D', borderRadius: 20, padding: 18, marginBottom: 14, elevation: 3 },
     cardTitulo:            { fontSize: 15, fontWeight: '700', color: '#ffffff', marginLeft: 6 },
     metaRow:               { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
@@ -591,10 +514,10 @@ const styles = StyleSheet.create({
     progressoBg:           { height: 8, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 4, overflow: 'hidden', marginBottom: 10 },
     progressoAtivo:        { height: 8, backgroundColor: '#A5D6A7', borderRadius: 4 },
     metaHint:              { fontSize: 12, color: '#ffffff', textAlign: 'center' },
-
     secaoTitulo:           { fontSize: 19, fontWeight: '800', color: '#fff', marginHorizontal: 18, marginTop: 8, marginBottom: 16 },
     refeicaoTipo:          { fontSize: 14, fontWeight: '700', color: '#fff', marginHorizontal: 18, marginBottom: 10 },
-    cardRefeicao:          { marginHorizontal: 18, borderRadius: 20, overflow: 'hidden', height: 160, marginBottom: 20 },
+    cardRefeicao:           { flex: 1 },
+    cardRefeicaoWrapper: { marginHorizontal: 18, borderRadius: 20, overflow: 'hidden', height: 160, marginBottom: 20 },
     refeicaoIconeRefresh:  { position: 'absolute', top: 12, right: 54, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgb(0,0,0)', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
     refeicaoIconeLixo:     { position: 'absolute', top: 12, right: 12, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(220,50,50,0.7)', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
     cardRefeicaoOverlay:   { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, backgroundColor: 'rgba(0,0,0,0.38)' },
@@ -603,10 +526,7 @@ const styles = StyleSheet.create({
     cardVazio:             { marginHorizontal: 18, borderRadius: 20, borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)', borderStyle: 'dashed', height: 110, justifyContent: 'center', alignItems: 'center', gap: 10, marginBottom: 20 },
     cardVazioIcone:        { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' },
     cardVazioTexto:        { fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
-    botaoDieta:            { marginHorizontal: 18, backgroundColor: '#fff', borderRadius: 30, paddingVertical: 16, alignItems: 'center', marginTop: 4, marginBottom: 10 },
-    botaoDietaTexto:       { fontSize: 16, fontWeight: '700', color: '#2E7D32' },
     tabTexto:              { fontSize: 12, color: '#999', fontWeight: '500', marginTop: 3 },
-
     modalOverlay:          { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
     modalBox:              { backgroundColor: '#fff', borderRadius: 28, padding: 28, alignItems: 'center', width: '100%' },
     modalIcone:            { width: 64, height: 64, borderRadius: 32, backgroundColor: '#FFEBEE', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },

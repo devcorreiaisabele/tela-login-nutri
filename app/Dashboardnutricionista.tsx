@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { getEvolucoes } from '../src/services/evolucaoService_1';
 import { getNutricionistaById } from '../src/services/nutricionistaService_1';
+import { getVinculosByNutricionista } from '../src/services/vinculoService_1';
 
 
 type Stats = {
@@ -39,23 +40,6 @@ type Lembrete = {
     acaoBotao: string;
 };
 
-
-const SUGESTOES_PREVIEW = [
-    {
-        id: '1',
-        titulo: 'Salada de Quinoa',
-        tempo: '15 min',
-        kcal: '250 kcal',
-        imagem: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400',
-    },
-    {
-        id: '2',
-        titulo: 'Panqueca de Aveia',
-        tempo: '10 min',
-        kcal: '180 kcal',
-        imagem: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400',
-    },
-];
 
 
 const CORES_CONQUISTA = ['#2E7D32', '#1565C0', '#6A1B9A', '#E65100', '#00695C'];
@@ -93,11 +77,11 @@ export default function DashboardNutricionista() {
 
                     if (!nutricionistaId) return;
 
-                    const [nutri, evolucoes] = await Promise.all([
+                    const [nutri, evolucoes, vinculos] = await Promise.all([
                     getNutricionistaById(nutricionistaId),
                     getEvolucoes(),
+                    getVinculosByNutricionista(nutricionistaId),
                     ]);
-                    const vinculos: any[] = [];
 
                     const meusVinculos = vinculos.filter((v: any) =>
                         v.nutricionista?.idNutri?.toString() === nutricionistaId ||
@@ -133,13 +117,13 @@ export default function DashboardNutricionista() {
                     setNome(nutri.nomeCompleto ?? '');
                     setStats({ pacientesAtivos: ativos.length, metasAtingidas });
                     setConquistas(conquistasMapeadas);
-                    setLembretes(pendentes.map((v: any) => ({
-                    id: (v.idVinculo ?? v.id).toString(),
-                    tipo: 'vinculo' as const,
-                    titulo: 'Solicitação de vínculo',
-                    descricao: `${v.nutricionistaNome ?? 'Paciente'} aguarda sua resposta.`,
-                    acaoBotao: 'Ver',
-                    })));
+                    setLembretes(pendentes.slice(0, 3).map((v: any) => ({
+    id: (v.idVinculo ?? v.id).toString(),
+    tipo: 'vinculo' as const,
+    titulo: 'Solicitação de vínculo',
+    descricao: `${v.usuario?.nomeCompleto ?? v.usuarioNome ?? 'Paciente'} aguarda aprovação.`,
+    acaoBotao: 'Ver',
+})));
                 } catch (err) {
                     console.error('Erro ao carregar dashboard:', err);
                 } finally {
@@ -190,53 +174,6 @@ export default function DashboardNutricionista() {
                             <Text style={styles.statLabel}>Metas Atingidas</Text>
                         </View>
                     </View>
-
-                    <View style={styles.secaoHeader}>
-                        <Text style={styles.secaoTitulo}>Sugestões de Receitas</Text>
-                        <TouchableOpacity onPress={() => router.push('./SugestoesReceitas')}>
-                            <Text style={styles.verTodas}>Ver todas</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.sugestoesLista}
-                        style={{ marginBottom: 28 }}
-                    >
-                        {SUGESTOES_PREVIEW.map(item => (
-                            <TouchableOpacity
-                                key={item.id}
-                                style={styles.sugestaoCard}
-                                activeOpacity={0.85}
-                                onPress={() => router.push('./SugestoesReceitas')}
-                            >
-                                <View style={styles.sugestaoImgBox}>
-                                    <Image
-                                        source={{ uri: item.imagem }}
-                                        style={{ flex: 1 }}
-                                        resizeMode="cover"
-                                    />
-                                </View>
-                                <View style={styles.sugestaoInfo}>
-                                    <Text style={styles.sugestaoTitulo} numberOfLines={2}>{item.titulo}</Text>
-                                    <View style={styles.sugestaoMetaRow}>
-                                        <Ionicons name="time-outline" size={12} color="#888" />
-                                        <Text style={styles.sugestaoMeta}>{item.tempo}</Text>
-                                        <MaterialCommunityIcons name="fire" size={12} color="#888" style={{ marginLeft: 6 }} />
-                                        <Text style={styles.sugestaoMeta}>{item.kcal}</Text>
-                                    </View>
-                                    <TouchableOpacity
-                                        style={styles.btnSugerirPequeno}
-                                        onPress={() => router.push('./SugestoesReceitas')}
-                                        activeOpacity={0.8}
-                                    >
-                                        <Text style={styles.btnSugerirPequenoTexto}>Sugerir a Pacientes</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
 
                     <View style={styles.secaoHeader}>
                         <Text style={styles.secaoTitulo}>Conquistas Recentes</Text>

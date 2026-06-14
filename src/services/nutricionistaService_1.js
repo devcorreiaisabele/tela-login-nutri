@@ -28,6 +28,7 @@ export const updateNutricionista = async (id, dados) => {
     biografia: dados.biografia ?? atual.biografia,
     avaliacaoMedia: dados.avaliacaoMedia ?? atual.avaliacaoMedia,
     totalPacientes: dados.totalPacientes ?? atual.totalPacientes,
+    fotoUrl: dados.fotoUrl ?? atual.fotoUrl,
   });
   return response.data;
 };

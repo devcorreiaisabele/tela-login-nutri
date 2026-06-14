@@ -6,6 +6,7 @@ import {
     Image, ScrollView, StatusBar, StyleSheet,
     Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
+import { getOuCriarPlanoUsuario, upsertReceitaNoPlano } from '../src/services/planoReceitaService';
 import { getReceitas } from '../src/services/receitaService_1';
 
 function normalizar(texto: string) {
@@ -28,6 +29,7 @@ export default function EscolherReceita() {
     const { refeicao } = useLocalSearchParams<{ refeicao: string }>();
     const [busca,     setBusca]     = useState('');
     const [sugestoes, setSugestoes] = useState<any[]>([]);
+    const [salvando,  setSalvando]  = useState(false);
 
     useEffect(() => {
         async function carregarReceitas() {
@@ -60,15 +62,26 @@ export default function EscolherReceita() {
     });
 
     const handleEscolher = async (item: any) => {
-        const refeicaoTipo = Array.isArray(refeicao) ? refeicao[0] : (refeicao ?? 'Jantar');
+    if (salvando) return;
+    setSalvando(true);
+    try {
         const usuarioId = await AsyncStorage.getItem('usuarioId');
-        await AsyncStorage.setItem(`receitaEscolhida_${usuarioId}`, JSON.stringify({
-            refeicao: refeicaoTipo,
-            titulo:   item.titulo,
-            desc:     item.desc,
-            imagem:   item.imagem,
-        }));
-        router.back();
+        console.log('USUARIO ID:', usuarioId); 
+        if (!usuarioId) return;
+
+        const refeicaoTipo = Array.isArray(refeicao) ? refeicao[0] : (refeicao ?? 'Jantar');
+
+        const plano = await getOuCriarPlanoUsuario(usuarioId);
+        console.log('PLANO:', JSON.stringify(plano)); 
+
+        await upsertReceitaNoPlano(plano.idPlano, Number(item.id), refeicaoTipo);
+
+            router.back();
+        } catch (e) {
+            console.log('Erro ao salvar receita:', e);
+        } finally {
+            setSalvando(false);
+        }
     };
 
     return (
@@ -98,7 +111,11 @@ export default function EscolherReceita() {
                 {filtradas.map(item => (
                     <View key={item.id} style={styles.cardReceita}>
                         <Image source={{ uri: item.imagem }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-                        <TouchableOpacity style={styles.addBtn} onPress={() => handleEscolher(item)}>
+                        <TouchableOpacity
+                            style={[styles.addBtn, salvando && { opacity: 0.6 }]}
+                            onPress={() => handleEscolher(item)}
+                            disabled={salvando}
+                        >
                             <Ionicons name="add" size={26} color="#fff" />
                         </TouchableOpacity>
                         <View style={styles.badges}>

@@ -1,4 +1,4 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -98,7 +98,9 @@ export default function DetalhePaciente() {
                 setPaciente(dados);
 
                 const planos = await getPlanosByUsuario(id);
+                console.log('PLANOS:', JSON.stringify(planos));
                 const planoAtivo = planos.find((p: any) => p.status === 'Ativo');
+                console.log('PLANO ATIVO:', JSON.stringify(planoAtivo));
                 if (planoAtivo) {
                     setPlanoExiste(true);
                     setPlanoId(planoAtivo.idPlano?.toString());
@@ -158,8 +160,8 @@ export default function DetalhePaciente() {
                         <Text style={s.cardTitulo}>Resumo de Calorias</Text>
                         <View style={s.badge}><Text style={s.badgeTexto}>Hoje</Text></View>
                     </View>
-                    <CirculoCalorias consumidas={0} meta={2000} />
-                    <Text style={s.metaDiaria}>Meta diária: <Text style={{ fontWeight: '800', color: '#111' }}>2.000 kcal</Text></Text>
+                    <CirculoCalorias consumidas={paciente.caloriasDiarias ?? 2000} meta={paciente.caloriasDiarias ?? 2000} />
+<Text style={s.metaDiaria}>Meta diária: <Text style={{ fontWeight: '800', color: '#111' }}>{(paciente.caloriasDiarias ?? 2000).toLocaleString('pt-BR')} kcal</Text></Text>
                 </View>
 
                 {pesoAtual > 0 && metaPeso > 0 && (
@@ -167,29 +169,6 @@ export default function DetalhePaciente() {
                         <Text style={s.secaoTitulo}>Meta de Peso</Text>
                         <CardMetaPeso pesoAtual={pesoAtual} metaPeso={metaPeso} pesoInicial={pesoInicial} />
                     </>
-                )}
-
-                {planoExiste ? (
-                    <TouchableOpacity
-                        style={s.btnPlano}
-                        activeOpacity={0.85}
-                        onPress={() => router.push({ pathname: './PlanoAlimentar', params: { id: planoId } })}
-                    >
-                        <MaterialCommunityIcons name="clipboard-text-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-                        <Text style={s.btnPlanoTexto}>Ver Plano Alimentar</Text>
-                    </TouchableOpacity>
-                ) : (
-                    <TouchableOpacity
-                        style={s.btnPlano}
-                        activeOpacity={0.85}
-                        onPress={() => router.push({
-                            pathname: './CriarPlanoAlimentar',
-                            params: { pacienteId: id, pacienteNome: paciente.nomeCompleto }
-                        })}
-                    >
-                        <MaterialCommunityIcons name="clipboard-plus-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-                        <Text style={s.btnPlanoTexto}>Criar Plano Alimentar</Text>
-                    </TouchableOpacity>
                 )}
 
                 <View style={{ height: 40 }} />

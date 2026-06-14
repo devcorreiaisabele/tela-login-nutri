@@ -30,32 +30,31 @@ export default function RestricoesAdicionais() {
   const [loading, setLoading] = useState(false);
   const { origem } = useLocalSearchParams();
 
-
   function toggleAlergia(id: string) {
     setAlergias((prev) =>
       prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
     );
   }
 
- async function handleContinuar() {
-  setLoading(true);
-  try {
-    const usuarioId = await AsyncStorage.getItem('usuarioId');
-    if (usuarioId) {
-      await updateUsuario(usuarioId, {
-        restricoesReligiosas: restricao,
-        alergias: alergias.join(','),
-      });
-    }
-if (origem === 'edicao') {
+  async function handleContinuar() {
+    setLoading(true);
+    try {
+      const usuarioId = await AsyncStorage.getItem('usuarioId');
+      if (usuarioId) {
+        await updateUsuario(usuarioId, {
+          restricoesReligiosas: restricao,
+          alergias: alergias.join(','),
+        });
+      }
+      if (origem === 'edicao') {
   router.replace('/MaisDetalhes');
 } else {
   router.push('./ObjetivosSaude');
 }
-  } finally {
-    setLoading(false);
+    } finally {
+      setLoading(false);
+    }
   }
-}
 
   return (
     <View style={g.container}>

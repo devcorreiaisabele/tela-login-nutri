@@ -31,6 +31,7 @@ const montarUsuarioPayload = (atual, dados) => {
     senhaHash: novosDados.senhaHash ?? atual.senhaHash,
     dataNascimento: novosDados.dataNascimento ?? atual.dataNascimento,
     genero: novosDados.genero ?? atual.genero,
+    caloriasDiarias: novosDados.caloriasDiarias ?? atual.caloriasDiarias,
     status: novosDados.status ?? atual.status,
     tipoDieta: novosDados.tipoDieta ?? atual.tipoDieta,
     alergias: novosDados.alergias ?? atual.alergias,
@@ -41,6 +42,7 @@ const montarUsuarioPayload = (atual, dados) => {
     pesoInicial: novosDados.pesoInicial ?? atual.pesoInicial,
     pesoMeta: novosDados.pesoMeta ?? atual.pesoMeta,
     altura: novosDados.altura ?? atual.altura,
+    fotoUrl: novosDados.fotoUrl ?? atual.fotoUrl,
   };
 };
 

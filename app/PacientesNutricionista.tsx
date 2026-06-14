@@ -35,21 +35,23 @@ export default function PacientesNutricionista() {
                 if (!nutricionistaId) return;
 
                 const vinculos = await getVinculos();
-                const ativos = vinculos.filter((v: any) =>
-                    (v.status ?? '').toLowerCase() === 'ativo' &&
-                    (
-                        v.nutricionista?.idNutri?.toString() === nutricionistaId ||
-                        v.fkIdNutri?.toString() === nutricionistaId
-                    )
-                );
+               const ativos = vinculos.filter((v: any) =>
+    (v.status ?? '').toLowerCase() === 'ativo' &&
+    (
+        v.nutricionista?.idNutri?.toString() === nutricionistaId ||
+        v.fkIdNutri?.toString() === nutricionistaId
+    )
+);
 
                 const mapeados = ativos.map((v: any) => ({
-                    id: (v.usuario?.idUser ?? v.fkIdUser ?? v.idVinculo ?? v.id).toString(),
-                    nome: v.usuario?.nomeCompleto ?? 'Paciente',
-                    objetivo: v.usuario?.objetivoSaude ?? 'Acompanhamento',
-                    corObj: '#2E7D32',
-                    foto: null,
-                }));
+    id: (v.fkIdUser ?? v.idVinculo).toString(),
+    nome: v.usuarioNome ?? 'Paciente',
+    objetivo: v.usuarioObjetivo ?? 'Acompanhamento',
+    corObj: '#2E7D32',
+    foto: null,
+}));
+
+                console.log('VINCULO:', JSON.stringify(vinculos[0]));
 
                 setPacientes(mapeados);
 
@@ -62,10 +64,9 @@ export default function PacientesNutricionista() {
 
         carregarPacientes();
     }, []);
-
-    const filtrados = pacientes.filter(p =>
-        p.nome.toLowerCase().includes(busca.toLowerCase())
-    );
+const filtrados = pacientes.filter(p =>
+    (p.nome ?? '').toLowerCase().includes(busca.toLowerCase())
+);
 
     return (
         <View style={s.root}>

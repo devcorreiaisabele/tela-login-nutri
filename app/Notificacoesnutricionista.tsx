@@ -67,6 +67,9 @@ const minhas = solicitacoes
                         tempo: s.dataSolicitacao ?? 'Hoje',
                         lida: false,
                     }));
+
+                    console.log('SOLICITACAO:', JSON.stringify(solicitacoes[0]));
+
                 setNotificacoes(minhas);
             } catch (err) {
                 console.error('Erro ao buscar notificações:', err);

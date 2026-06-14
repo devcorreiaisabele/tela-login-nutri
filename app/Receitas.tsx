@@ -50,7 +50,7 @@ export default function Receitas() {
     }, []);
 
     const receitasDestaque = receitas.slice(0, 5);
-    const outrasReceitas   = receitas.slice(0, 6);
+    const outrasReceitas   = receitas.slice(5);
 
     return (
         <View style={style.container}>
@@ -74,68 +74,56 @@ export default function Receitas() {
                 ) : (
                     <>
                         <Text style={style.secaoTitulo}>Recomendado para Você</Text>
-                        <View style={styles.carouselWrapper}>
-                            <View style={styles.labelsColuna}>
-                                <View style={styles.labelLateral}>
-                                    <Text style={styles.labelTexto}>{"Today's Recipe"}</Text>
-                                    <View style={styles.labelPonto} />
-                                </View>
-                                <View style={[styles.labelLateral, { marginTop: 60 }]}>
-                                    <Text style={styles.labelTexto}>Recomendado</Text>
-                                    <View style={styles.labelPonto} />
-                                </View>
-                            </View>
 
-                            <FlatList
-                                data={receitasDestaque}
-                                keyExtractor={item => item.idReceita.toString()}
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={styles.cardsDestaqueContainer}
-                                snapToInterval={CARD_W + CARD_GAP}
-                                decelerationRate="fast"
-                                renderItem={({ item }) => {
-                                    const tags = item.tags ? item.tags.split(',') : [];
-                                    return (
-                                        <TouchableOpacity
-                                            style={styles.cardDestaque}
-                                            activeOpacity={0.92}
-                                            onPress={() => router.push({ pathname: './DetalheReceita', params: { id: item.idReceita } })}
-                                        >
-                                            {item.imagemUrl ? (
-                                                <Image source={{ uri: item.imagemUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
-                                            ) : (
-                                                <View style={styles.cardDestaqueBackground} />
-                                            )}
-                                            {tags.length > 0 && (
-                                                <View style={styles.tag}>
-                                                    <MaterialCommunityIcons name="leaf" size={13} color="#fff" />
-                                                    <Text style={styles.tagTexto}>{tags[0].trim()}</Text>
-                                                </View>
-                                            )}
-                                            <View style={styles.cardDestaqueGradient}>
-                                                <Text style={styles.cardDestaqueTitulo}>{item.titulo}</Text>
-                                                <View style={styles.cardDestaqueMeta}>
-                                                    {item.tempoPreparo > 0 && (
-                                                        <>
-                                                            <Ionicons name="time-outline" size={14} color="#fff" />
-                                                            <Text style={styles.cardDestaqueMetaTexto}>{item.tempoPreparo} min</Text>
-                                                        </>
-                                                    )}
-                                                    {item.calorias > 0 && (
-                                                        <>
-                                                            <View style={styles.separador} />
-                                                            <MaterialCommunityIcons name="fire" size={14} color="#fff" />
-                                                            <Text style={styles.cardDestaqueMetaTexto}>{item.calorias} kcal</Text>
-                                                        </>
-                                                    )}
-                                                </View>
+                        <FlatList
+                            data={receitasDestaque}
+                            keyExtractor={item => item.idReceita.toString()}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.cardsDestaqueContainer}
+                            snapToInterval={CARD_W + CARD_GAP}
+                            decelerationRate="fast"
+                            renderItem={({ item }) => {
+                                const tags = item.tags ? item.tags.split(',') : [];
+                                return (
+                                    <TouchableOpacity
+                                        style={styles.cardDestaque}
+                                        activeOpacity={0.92}
+                                        onPress={() => router.push({ pathname: './DetalheReceita', params: { id: item.idReceita } })}
+                                    >
+                                        {item.imagemUrl ? (
+                                            <Image source={{ uri: item.imagemUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+                                        ) : (
+                                            <View style={styles.cardDestaqueBackground} />
+                                        )}
+                                        {tags.length > 0 && (
+                                            <View style={styles.tag}>
+                                                <MaterialCommunityIcons name="leaf" size={13} color="#fff" />
+                                                <Text style={styles.tagTexto}>{tags[0].trim()}</Text>
                                             </View>
-                                        </TouchableOpacity>
-                                    );
-                                }}
-                            />
-                        </View>
+                                        )}
+                                        <View style={styles.cardDestaqueGradient}>
+                                            <Text style={styles.cardDestaqueTitulo}>{item.titulo}</Text>
+                                            <View style={styles.cardDestaqueMeta}>
+                                                {item.tempoPreparo > 0 && (
+                                                    <>
+                                                        <Ionicons name="time-outline" size={14} color="#fff" />
+                                                        <Text style={styles.cardDestaqueMetaTexto}>{item.tempoPreparo} min</Text>
+                                                    </>
+                                                )}
+                                                {item.calorias > 0 && (
+                                                    <>
+                                                        <View style={styles.separador} />
+                                                        <MaterialCommunityIcons name="fire" size={14} color="#fff" />
+                                                        <Text style={styles.cardDestaqueMetaTexto}>{item.calorias} kcal</Text>
+                                                    </>
+                                                )}
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            }}
+                        />
 
                         {outrasReceitas.length > 0 && (
                             <>
@@ -220,12 +208,7 @@ const styles = StyleSheet.create({
     buscaBtn:                { width: 50, height: 50, borderRadius: 25, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', elevation: 5 },
     loadingBox:              { alignItems: 'center', paddingTop: 60 },
     loadingTexto:            { fontSize: 14, color: '#888' },
-    carouselWrapper:         { flexDirection: 'row', alignItems: 'center' },
-    labelsColuna:            { width: 44, height: CARD_H, justifyContent: 'space-between', paddingVertical: 30, paddingLeft: 10 },
-    labelLateral:            { alignItems: 'center', gap: 8 },
-    labelTexto:              { transform: [{ rotate: '-90deg' }], width: 110, textAlign: 'center', fontSize: 11, color: '#aaa', fontWeight: '600', letterSpacing: 0.3 },
-    labelPonto:              { width: 7, height: 7, borderRadius: 4, backgroundColor: '#4CAF50' },
-    cardsDestaqueContainer:  { paddingRight: 25, gap: CARD_GAP },
+    cardsDestaqueContainer:  { paddingHorizontal: 25, gap: CARD_GAP },
     cardDestaque:            { width: CARD_W, height: CARD_H, borderRadius: 32, overflow: 'hidden', backgroundColor: '#A5D6A7' },
     cardDestaqueBackground:  { ...StyleSheet.absoluteFillObject, backgroundColor: '#4CAF50' },
     tag:                     { position: 'absolute', top: 18, left: 18, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(46,125,50,0.88)', paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, gap: 5, zIndex: 10 },

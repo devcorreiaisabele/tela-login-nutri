@@ -15,7 +15,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { createUsuario } from '../src/services/usuarioService_1';
+import { createUsuario, getUsuarios } from '../src/services/usuarioService_1';
 import { createVinculo } from '../src/services/vinculoService_1';
 
 export default function CriarPaciente() {
@@ -38,30 +38,47 @@ export default function CriarPaciente() {
         setSalvando(true);
 
         try {
-            const nutricionistaId = await AsyncStorage.getItem('nutricionistaId');
-            const usuario = await createUsuario({
-                nomeCompleto: nome.trim(),
-                email: email.trim().toLowerCase(),
-                senhaHash: senha,
-            });
+    const nutricionistaId = await AsyncStorage.getItem('nutricionistaId');
 
-            if (nutricionistaId) {
-                await createVinculo({
-                    fkIdUser: usuario.idUser ?? usuario.id,
-                    fkIdNutri: Number(nutricionistaId),
-                    dataSolicitacao: new Date().toISOString().split('T')[0],
-                    dataAprovacao: new Date().toISOString().split('T')[0],
-                    status: 'Ativo',
-                });
-            }
 
-            router.replace({
-                pathname: './ContaCriada',
-                params: {
-                    nome:  nome.trim(),
-                    email: email.trim().toLowerCase(),
-                },
-            });
+    const usuarios = await getUsuarios();
+    const emailJaExiste = usuarios.some(
+        (u: any) => u.email === email.trim().toLowerCase()
+    );
+    if (emailJaExiste) {
+        Alert.alert('Atenção', 'Este e-mail já está cadastrado.');
+        return;
+    }
+
+
+    await createUsuario({
+        nomeCompleto: nome.trim(),
+        email: email.trim().toLowerCase(),
+        senhaHash: senha,
+    });
+
+
+    const todosUsuarios = await getUsuarios();
+    const usuarioCriado = todosUsuarios.find(
+        (u: any) => u.email === email.trim().toLowerCase()
+    );
+
+    if (nutricionistaId && usuarioCriado) {
+        await createVinculo({
+            usuarioId: usuarioCriado.idUser,
+            nutricionistaId: Number(nutricionistaId),
+            dataSolicitacao: new Date().toISOString().split('T')[0],
+            status: 'Ativo',
+        });
+    }
+
+    router.replace({
+        pathname: './ContaCriada',
+        params: {
+            nome:  nome.trim(),
+            email: email.trim().toLowerCase(),
+        },
+    });
         } catch (err) {
             console.log('Erro ao criar paciente:', err);
             Alert.alert('Erro', 'não foi possi­vel criar a conta do paciente.');
